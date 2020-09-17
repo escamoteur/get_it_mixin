@@ -1,0 +1,18 @@
+name: flutter_weather_demo
+description: A new Flutter project.
+version: 1.0.0+1
+environment:
+  sdk: '>=2.6.0 <3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^0.12.2
+  flutter_command: any 
+  get_it: ^5.0.0
+  get_it_mixin:
+    path: ../
+  functional_listener: any
+
+flutter:
+  uses-material-design: true
