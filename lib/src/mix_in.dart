@@ -7,9 +7,9 @@ import 'package:get_it/get_it.dart';
 import 'package:quiver/core.dart';
 
 mixin GetItMixin on StatelessWidget {
-  final _MixinState state = _MixinState();
+  final _MixinState _state = _MixinState();
   @override
-  StatelessElement createElement() => _StatelessMixInElement(this, state);
+  StatelessElement createElement() => _StatelessMixInElement(this, _state);
 
   /// all the following functions can be called inside the build function but also
   /// in e.g. in `initState` of a `StatefulWidget`.
@@ -19,25 +19,34 @@ mixin GetItMixin on StatelessWidget {
   /// function used for this type or based on a name.
   /// for factories you can pass up to 2 parameters [param1,param2] they have to match the types
   /// given at registration with [registerFactoryParam()]
-  T get<T>({String instanceName, dynamic param1, dynamic param2});
+  T get<T>({String instanceName, dynamic param1, dynamic param2}) =>
+      GetIt.I<T>(instanceName: instanceName, param1: param1, param2: param2);
 
   /// like [get] but for async registrations
-  Future<T> getAsync<T>({String instanceName, dynamic param1, dynamic param2});
+  Future<T> getAsync<T>(
+          {String instanceName, dynamic param1, dynamic param2}) =>
+      GetIt.I.getAsync<T>(
+          instanceName: instanceName, param1: param1, param2: param2);
 
   /// like [get] but with an additional [select] function to return a member of [T]
-  R getX<T, R>(R Function(T) accessor, {String instanceName});
+  R getX<T, R>(R Function(T) accessor, {String instanceName}) {
+    assert(accessor != null);
+    return accessor(GetIt.I<T>(instanceName: instanceName));
+  }
 
   /// like [get] but it also registers a listener to [T] and
-  /// triggers a rebuild everytime [T] signals a change
-  T watch<T extends Listenable>({String instanceName});
+  /// triggers a rebuild every time [T] signals a change
+  T watch<T extends Listenable>({String instanceName}) =>
+      _state.watch<T>(instanceName: instanceName);
 
   /// like [get] but it also registers a listener to the result of [select] and
-  /// triggers a rebuild everytime signals [R] a change
+  /// triggers a rebuild every time signals [R] a change
   /// useful if the `Listenable` [R] is a member of your business object [T]
   R watchX<T, R extends Listenable>(
     R Function(T) select, {
     String instanceName,
-  });
+  }) =>
+      _state.watchX<T, R>(select, instanceName: instanceName);
 
   /// like watch but it only triggers a rebuild when the value that the function
   /// [only] returns changes. With that you can react to changes of single members
@@ -45,14 +54,16 @@ mixin GetItMixin on StatelessWidget {
   R watchOnly<T extends Listenable, R>(
     R Function(T) only, {
     String instanceName,
-  });
+  }) =>
+      _state.watchOnly<T, R>(only, instanceName: instanceName);
 
   /// a combination of [watchX] and [watchOnly]
   R watchXOnly<T, Q extends Listenable, R>(
     Q Function(T) select,
     R Function(Q) only, {
     String instanceName,
-  });
+  }) =>
+      _state.watchXOnly<T, Q, R>(select, only, instanceName: instanceName);
 
   /// subscribes to the `Stream` returned by [select] and returns
   /// an `AsyncSnapshot` with the latest received data from the `Stream`
@@ -61,25 +72,40 @@ mixin GetItMixin on StatelessWidget {
   /// return the last received data but not subscribe another time.
   /// To be able to use [watchStream] inside a `build` function we have to pass
   /// [initialValue] so that it can return something before it has received the first data
+  /// if [select] returns a different Stream than on the last call, [watchStream]
+  /// will cancel the previous subscription and subscribe to the new stream.
+  /// [preserveState] determines then if the new initial value should be the last
+  /// value of the previous stream or again [initialValue]
   AsyncSnapshot<R> watchStream<T, R>(
     Stream<R> Function(T) select,
     R initialValue, {
     String instanceName,
-  });
+    bool preserveState = true,
+  }) =>
+      _state.watchStream<T, R>(select, initialValue,
+          instanceName: instanceName, preserveState: preserveState);
 
   /// awaits the ` Future` returned by [select] and triggers a rebuild as soon
   /// as the `Future` completes. After that it returns
   /// an `AsyncSnapshot` with the received data from the `Future`
   /// When you call [watchFuture] a second time on the same `Future` it will
-  /// return the last received data but not await another time.
+  /// return the last received data but not observe the Future a another time.
   /// To be able to use [watchStream] inside a `build` function
   /// we have to pass [initialValue] so that it can return something before
   /// the `Future` has completed
+  /// if [select] returns a different `Future` than on the last call, [watchFuture]
+  /// will ignore the completion of the previous Future and observe the completion
+  /// of the new Future.
+  /// [preserveState] determines then if the new initial value should be the last
+  /// value of the previous stream or again [initialValue]
   AsyncSnapshot<R> watchFuture<T, R>(
-    Stream<R> Function(T) select,
+    Future<R> Function(T) select,
     R initialValue, {
     String instanceName,
-  });
+    bool preserveState = true,
+  }) =>
+      _state.watchFuture<T, R>(select, initialValue,
+          instanceName: instanceName, preserveState: preserveState);
 
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
   /// objects that should only exist as long as this scope exists.
@@ -172,21 +198,6 @@ class _MixinState {
 
   void init(Element element) {
     _element = element;
-  }
-
-  T get<T>({String instanceName, dynamic param1, dynamic param2}) {
-    return GetIt.I<T>(
-        instanceName: instanceName, param1: param1, param2: param2);
-  }
-
-  Future<T> getAsync<T>({String instanceName, dynamic param1, dynamic param2}) {
-    return GetIt.I.getAsync<T>(
-        instanceName: instanceName, param1: param1, param2: param2);
-  }
-
-  R getX<T, R>(R Function(T) accessor, {String instanceName}) {
-    assert(accessor != null);
-    return accessor(GetIt.I<T>(instanceName: instanceName));
   }
 
   T watch<T extends Listenable>({String instanceName}) {
