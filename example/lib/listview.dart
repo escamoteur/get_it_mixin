@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_command/flutter_command.dart';
 import 'package:flutter_weather_demo/the_viewmodel.dart';
-import 'package:get_it/get_it.dart';
+import 'package:get_it_mixin/get_it_mixin.dart';
 
-class WeatherListView extends StatelessWidget {
+class WeatherListView extends StatelessWidget with GetItMixin {
   WeatherListView();
   @override
   Widget build(BuildContext context) {
+    final Command x = watchXOnly((TheViewModel m) => m.setExecutionStateCommand,(c)=>);
+
     return ValueListenableBuilder<List<WeatherEntry>>(
-      valueListenable: GetIt.I<TheViewModel>().updateWeatherCommand,
+      valueListenable: getX((TheViewModel x) => x.updateWeatherCommand),
       builder: (BuildContext context, List<WeatherEntry> data, _) {
         return ListView.builder(
           itemCount: data.length,

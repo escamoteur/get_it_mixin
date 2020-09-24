@@ -3,7 +3,7 @@ analyzer:
     implicit-casts: false
   errors:
     unused_import: error
-    unused_local_variable: error
+   # unused_local_variable: error
     dead_code: error
     invalid_override_of_non_virtual_member: error
   exclude:
@@ -43,7 +43,7 @@ linter:
     - no_adjacent_strings_in_list
     - no_duplicate_case_values
     - non_constant_identifier_names
-    - omit_local_variable_types
+    #- omit_local_variable_types
     #- only_throw_errors
     - overridden_fields
     #- package_api_docs

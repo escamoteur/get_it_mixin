@@ -1,7 +1,2 @@
 library get_it_mixin;
-
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+export 'package:get_it_mixin/src/mix_in.dart';

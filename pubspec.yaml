@@ -10,6 +10,7 @@ environment:
 
 dependencies:
   get_it: ^5.0.0
+  quiver: ^2.1.3 
   flutter:
     sdk: flutter
 
