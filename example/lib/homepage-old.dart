@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_weather_demo/the_viewmodel.dart';
 import 'package:functional_listener/functional_listener.dart';
 import 'package:get_it/get_it.dart';
-import 'package:get_it_mixin/get_it_mixin.dart';
 
 import 'listview.dart';
 
@@ -11,12 +10,12 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with GetItStateMixin {
+class _HomePageState extends State<HomePage> {
   ListenableSubscription errorSubscription;
 
   @override
   void didChangeDependencies() {
-    errorSubscription ??= get<TheViewModel>()
+    errorSubscription ??= GetIt.I<TheViewModel>()
         .updateWeatherCommand
         .thrownExceptions
         .where((x) => x != null) // filter out the error value reset
@@ -39,8 +38,6 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final isRunning =
-        watchX((TheViewModel x) => x.updateWeatherCommand.isExecuting);
     return Scaffold(
       appBar: AppBar(title: Text("WeatherDemo")),
       body: Column(
@@ -65,15 +62,24 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
             child: Stack(
               children: [
                 WeatherListView(),
-                // if true we show a busy Spinner otherwise the ListView
-                if (isRunning.value == true)
-                  Center(
-                    child: Container(
-                      width: 50.0,
-                      height: 50.0,
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
+                ValueListenableBuilder<bool>(
+                  valueListenable:
+                      GetIt.I<TheViewModel>().updateWeatherCommand.isExecuting,
+                  builder: (BuildContext context, bool isRunning, _) {
+                    // if true we show a busy Spinner otherwise the ListView
+                    if (isRunning == true) {
+                      return Center(
+                        child: Container(
+                          width: 50.0,
+                          height: 50.0,
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    } else {
+                      return SizedBox();
+                    }
+                  },
+                ),
               ],
             ),
           ),

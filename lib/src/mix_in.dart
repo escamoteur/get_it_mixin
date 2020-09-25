@@ -138,13 +138,13 @@ class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement
   W get widget => super.widget;
 
   @override
-  void update(Widget newWidget) {
+  void update(W newWidget) {
+    newWidget._state.value = _state;
     super.update(newWidget);
-    widget._state.value = _state;
   }
 }
 
-mixin GetItStateMixin on State {
+mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
   /// this is an ugly hack so that you don't get a warning in the statelesswidget
   final _MutableWrapper<_MixinState> _state = _MutableWrapper<_MixinState>();
   @override
