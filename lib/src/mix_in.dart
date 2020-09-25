@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/src/widgets/async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
-import 'package:quiver/core.dart';
 
 mixin GetItMixin on StatelessWidget {
   final _MixinState _state = _MixinState();
@@ -116,7 +116,8 @@ mixin GetItMixin on StatelessWidget {
   /// an async disposal function, that functions won't be awaited.
   /// I would recommend doing pushing and popping from your business layer but sometimes
   /// this might come in handy
-  void pushScope({void Function(GetIt getIt) init, void Function() dispose});
+  void pushScope({void Function(GetIt getIt) init, void Function() dispose}) =>
+      _state.pushScope(init: init, dispose: dispose);
 }
 
 class _StatelessMixInElement extends StatelessElement with _GetItElement {
@@ -132,6 +133,12 @@ mixin _GetItElement on ComponentElement {
   void mount(Element parent, newSlot) {
     _state.init(this);
     super.mount(parent, newSlot);
+  }
+
+  @override
+  Widget build() {
+    _state.resetCurrentWatch();
+    return super.build();
   }
 
   @override
@@ -152,13 +159,13 @@ mixin _GetItElement on ComponentElement {
   }
 }
 
-class _WatchEntry<T> {
-  final Listenable currentListenable;
+class _WatchEntry<T> extends LinkedListEntry<_WatchEntry<T>> {
+  Listenable currentListenable;
   Function notificationHandler;
   StreamSubscription subscription;
-  final Stream currentStream;
+  Stream currentStream;
   Future currentFuture;
-  final void Function(_WatchEntry entry) _dispose;
+  void Function(_WatchEntry entry) _dispose;
   T lastValue;
   _WatchEntry(
       {this.notificationHandler,
@@ -175,45 +182,45 @@ class _WatchEntry<T> {
 }
 
 class _MixinState {
-  final watches = <int, _WatchEntry>{};
   Element _element;
 
-  _WatchEntry _getWatch<T>(Object hashPart1,
-          [Object hashPart2, Object hashPart3]) =>
-      watches[_calcHash(hashPart1, hashPart2, hashPart3)] as _WatchEntry<T>;
-
-  _WatchEntry _storeWatch(_WatchEntry entry, Object hashPart1,
-          [Object hashPart2, Object hashPart3]) =>
-      watches[_calcHash(hashPart1, hashPart2, hashPart3)];
-
-  int _calcHash(Object hashPart1, Object hashPart2, Object hashPart3) {
-    if (hashPart2 == null && hashPart3 == null) {
-      return hashPart1.hashCode;
-    }
-    if (hashPart3 == null) {
-      return hash2(hashPart1, hashPart2);
-    }
-    return hash3(hashPart1, hashPart2, hashPart3);
-  }
+  LinkedList<_WatchEntry> watchList = LinkedList<_WatchEntry>();
+  _WatchEntry currentWatch;
 
   void init(Element element) {
     _element = element;
   }
 
+  void resetCurrentWatch() {
+    currentWatch = watchList.isNotEmpty ? watchList.first : null;
+  }
+
+  _WatchEntry<T> _getWatch<T>() {
+    if (currentWatch != null) {
+      final result = currentWatch;
+      currentWatch = currentWatch.next;
+      return result as _WatchEntry<T>;
+    }
+    return null;
+  }
+
+  void _appendWatch(_WatchEntry entry) {
+    watchList.add(entry);
+    currentWatch = null;
+  }
+
   T watch<T extends Listenable>({String instanceName}) {
     final listenable = GetIt.I<T>(instanceName: instanceName);
-    final alreadyRegistered = _getWatch<T>(listenable);
+    final watch = _getWatch<T>();
 
-    if (alreadyRegistered == null) {
+    if (watch == null) {
       final handler = () => _element.markNeedsBuild();
-      _storeWatch(
-          _WatchEntry<T>(
-            currentListenable: listenable,
-            lastValue: listenable,
-            notificationHandler: handler,
-            dispose: (x) => listenable.removeListener(x.notificationHandler),
-          ),
-          listenable);
+      _appendWatch(_WatchEntry<T>(
+        currentListenable: listenable,
+        lastValue: listenable,
+        notificationHandler: handler,
+        dispose: (x) => listenable.removeListener(x.notificationHandler),
+      ));
       listenable.addListener(handler);
     }
     return listenable;
@@ -225,34 +232,32 @@ class _MixinState {
   }) {
     assert(select != null, 'select can\'t be null if you use watchX');
     final parentObject = GetIt.I<T>(instanceName: instanceName);
-    assert(select(parentObject) != null, 'select returned null in watchX');
-
-    _WatchEntry<R> alreadyRegistered = _getWatch(parentObject, select);
-
-    if (alreadyRegistered != null &&
-        select(parentObject) != alreadyRegistered.currentListenable) {
-      /// select returned a different value than the last time
-      /// so we have to unregister out handler and subscribe anew
-      alreadyRegistered.dispose();
-      alreadyRegistered = null;
-    }
-
     final listenable = select(parentObject);
-    if (alreadyRegistered == null) {
-      final handler = () => _element.markNeedsBuild();
-      _getWatch(
-        parentObject,
-        select,
-        _WatchEntry<R>(
-          notificationHandler: handler,
-          currentListenable: listenable,
-          dispose: (x) => listenable.removeListener(
-            x.notificationHandler,
-          ),
+    assert(listenable == null, 'select returned null in watchX');
+
+    _WatchEntry<R> watch = _getWatch();
+
+    if (watch != null) {
+      if (select(parentObject) == watch.currentListenable) {
+        return watch.lastValue;
+      } else {
+        /// select returned a different value than the last time
+        /// so we have to unregister out handler and subscribe anew
+        watch.dispose();
+      }
+    } else {
+      _appendWatch(_WatchEntry<R>(
+        dispose: (x) => listenable.removeListener(
+          x.notificationHandler,
         ),
-      );
-      listenable.addListener(handler);
+      ));
     }
+
+    final handler = () => _element.markNeedsBuild();
+    watch.notificationHandler = handler;
+    watch.currentListenable = listenable;
+
+    listenable.addListener(handler);
     return listenable;
   }
 
@@ -263,7 +268,7 @@ class _MixinState {
     assert(only != null, 'only can\'t be null if you use watchOnly');
     final parentObject = GetIt.I<T>(instanceName: instanceName);
 
-    _WatchEntry<R> alreadyRegistered = _getWatch(parentObject, only);
+    _WatchEntry<R> alreadyRegistered = _getWatch();
 
     if (alreadyRegistered == null) {
       final watch = _WatchEntry<R>(
@@ -279,7 +284,7 @@ class _MixinState {
         }
       };
       watch.notificationHandler = handler;
-      _storeWatch(watch, parentObject, only);
+      _appendWatch(watch);
 
       parentObject.addListener(handler);
     }
@@ -297,34 +302,35 @@ class _MixinState {
     final Q listenable = select(parentObject);
     assert(listenable != null, 'watchXOnly: select must return a Listenable');
 
-    _WatchEntry<R> alreadyRegistered = _getWatch(parentObject, select, only);
+    _WatchEntry<R> watch = _getWatch();
 
-    if (alreadyRegistered != null &&
-        listenable != alreadyRegistered.currentListenable) {
-      /// select returned a different value than the last time
-      /// so we have to unregister out handler and subscribe anew
-      alreadyRegistered.dispose();
-      alreadyRegistered = null;
-    }
-
-    if (alreadyRegistered == null) {
-      final watch = _WatchEntry<R>(
-          currentListenable: listenable,
+    if (watch != null) {
+      if (listenable == watch.currentListenable) {
+        return watch.lastValue;
+      } else {
+        /// select returned a different value than the last time
+        /// so we have to unregister out handler and subscribe anew
+        watch.dispose();
+      }
+    } else {
+      watch = _WatchEntry<R>(
           lastValue: only(listenable),
           dispose: (x) => listenable.removeListener(x.notificationHandler));
-
-      final handler = () {
-        final newValue = only(listenable);
-        if (watch.lastValue != newValue) {
-          _element.markNeedsBuild();
-          watch.lastValue = newValue;
-        }
-      };
-      watch.notificationHandler = handler;
-      _storeWatch(watch, parentObject, select, only);
-
-      listenable.addListener(handler);
+      _appendWatch(watch);
     }
+
+    final handler = () {
+      final newValue = only(listenable);
+      if (watch.lastValue != newValue) {
+        _element.markNeedsBuild();
+        watch.lastValue = newValue;
+      }
+    };
+
+    watch.currentListenable = listenable;
+    watch.notificationHandler = handler;
+
+    listenable.addListener(handler);
     return only(listenable);
   }
 
@@ -339,45 +345,42 @@ class _MixinState {
     final stream = select(parentObject);
     assert(stream != null, 'select returned null in watchX');
 
-    _WatchEntry<AsyncSnapshot<R>> alreadyRegistered =
-        _getWatch(parentObject, select);
+    _WatchEntry<AsyncSnapshot<R>> watch = _getWatch();
 
-    if (alreadyRegistered != null &&
-        stream != alreadyRegistered.currentStream) {
-      /// select returned a different value than the last time
-      /// so we have to unregister out handler and subscribe anew
-      initialValue = preserveState
-          ? alreadyRegistered.lastValue ?? initialValue
-          : initialValue;
-      alreadyRegistered.dispose();
-      alreadyRegistered = null;
-    }
-
-    if (alreadyRegistered == null) {
-      final watch = _WatchEntry(
-          currentStream: stream,
-          lastValue:
-              AsyncSnapshot<R>.withData(ConnectionState.waiting, initialValue),
-          dispose: (x) => x.subscription.cancel());
-
-      // ignore: cancel_subscriptions
-      final subscription = stream.listen(
-        (x) {
-          watch.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
-          _element.markNeedsBuild();
-        },
-        onError: (error) {
-          watch.lastValue =
-              AsyncSnapshot.withError(ConnectionState.active, error);
-          _element.markNeedsBuild();
-        },
-      );
-      watch.subscription = subscription;
-      _storeWatch(watch, parentObject, select);
-      return watch.lastValue;
+    if (watch != null) {
+      if (stream == watch.currentStream) {
+        ///  still the same stream so we can directly return lastvalue
+        return watch.lastValue;
+      } else {
+        /// select returned a different value than the last time
+        /// so we have to unregister out handler and subscribe anew
+        watch.dispose();
+        initialValue =
+            preserveState ? watch.lastValue ?? initialValue : initialValue;
+      }
     } else {
-      return alreadyRegistered.lastValue;
+      watch = _WatchEntry(dispose: (x) => x.subscription.cancel());
+      _appendWatch(watch);
     }
+
+    // ignore: cancel_subscriptions
+    final subscription = stream.listen(
+      (x) {
+        watch.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
+        _element.markNeedsBuild();
+      },
+      onError: (error) {
+        watch.lastValue =
+            AsyncSnapshot.withError(ConnectionState.active, error);
+        _element.markNeedsBuild();
+      },
+    );
+    watch.subscription = subscription;
+    watch.currentStream = stream;
+    watch.lastValue =
+        AsyncSnapshot<R>.withData(ConnectionState.waiting, initialValue);
+
+    return watch.lastValue;
   }
 
   AsyncSnapshot<R> watchFuture<T, R>(
@@ -388,52 +391,44 @@ class _MixinState {
     final future = select(parentObject);
     assert(future != null, 'select returned null in watchX');
 
-    _WatchEntry<AsyncSnapshot<R>> alreadyRegistered =
-        _getWatch(parentObject, select);
+    _WatchEntry<AsyncSnapshot<R>> watch = _getWatch();
 
-    if (alreadyRegistered != null &&
-        future != alreadyRegistered.currentFuture) {
-      /// select returned a different value than the last time
-      /// so we have to unregister out handler and subscribe anew
-      initialValue = preserveState
-          ? alreadyRegistered.lastValue ?? initialValue
-          : initialValue;
-      alreadyRegistered.dispose();
-      alreadyRegistered = null;
-    }
-
-    if (alreadyRegistered == null) {
-      final watch = _WatchEntry<AsyncSnapshot<R>>(
-          lastValue:
-              AsyncSnapshot<R>.withData(ConnectionState.waiting, initialValue),
-
-          /// a future can't really be cancelled. so we just mark it as
-          /// no longer valid and check for that in the handler
-          dispose: (x) => x.currentFuture = null);
-
-      // ignore: cancel_subscriptions
-      final handlerFuture = future.then(
-        (x) {
-          if (watch.currentFuture != null) {
-            // only update if Future is still valid
-            watch.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
-            _element.markNeedsBuild();
-          }
-        },
-        onError: (error) {
-          if (watch.currentFuture != null) {
-            watch.lastValue =
-                AsyncSnapshot.withError(ConnectionState.active, error);
-            _element.markNeedsBuild();
-          }
-        },
-      );
-      watch.currentFuture = handlerFuture;
-      _storeWatch(watch, parentObject, select);
-      return watch.lastValue;
+    if (watch != null) {
+      if (future == watch.currentFuture) {
+        ///  still the same future so we can directly return lastvalue
+        return watch.lastValue;
+      } else {
+        /// select returned a different value than the last time
+        /// so we have to unregister out handler and subscribe anew
+        watch.dispose();
+        initialValue =
+            preserveState ? watch.lastValue ?? initialValue : initialValue;
+      }
     } else {
-      return alreadyRegistered.lastValue;
+      watch = _WatchEntry(dispose: (x) => x.currentFuture = null);
+      _appendWatch(watch);
     }
+
+    watch.currentFuture = future.then(
+      (x) {
+        if (watch.currentFuture != null) {
+          // only update if Future is still valid
+          watch.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
+          _element.markNeedsBuild();
+        }
+      },
+      onError: (error) {
+        if (watch.currentFuture != null) {
+          watch.lastValue =
+              AsyncSnapshot.withError(ConnectionState.active, error);
+          _element.markNeedsBuild();
+        }
+      },
+    );
+    watch.lastValue =
+        AsyncSnapshot<R>.withData(ConnectionState.waiting, initialValue);
+
+    return watch.lastValue;
   }
 
   bool _scopeWasPushed = false;
@@ -446,8 +441,9 @@ class _MixinState {
   }
 
   void clearRegistratons() {
-    watches.values.forEach((x) => x.dispose());
-    watches.clear();
+    watchList.forEach((x) => x.dispose());
+    watchList.clear();
+    currentWatch = null;
   }
 
   void dispose() {

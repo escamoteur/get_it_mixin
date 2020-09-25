@@ -59,23 +59,28 @@ class _HomePageState extends State<HomePage> {
           ),
           Expanded(
             // Handle events to show / hide spinner
-            child: ValueListenableBuilder<bool>(
-              valueListenable:
-                  GetIt.I<TheViewModel>().updateWeatherCommand.isExecuting,
-              builder: (BuildContext context, bool isRunning, _) {
-                // if true we show a busy Spinner otherwise the ListView
-                if (isRunning == true) {
-                  return Center(
-                    child: Container(
-                      width: 50.0,
-                      height: 50.0,
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                } else {
-                  return WeatherListView();
-                }
-              },
+            child: Stack(
+              children: [
+                WeatherListView(),
+                ValueListenableBuilder<bool>(
+                  valueListenable:
+                      GetIt.I<TheViewModel>().updateWeatherCommand.isExecuting,
+                  builder: (BuildContext context, bool isRunning, _) {
+                    // if true we show a busy Spinner otherwise the ListView
+                    if (isRunning == true) {
+                      return Center(
+                        child: Container(
+                          width: 50.0,
+                          height: 50.0,
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    } else {
+                      return SizedBox();
+                    }
+                  },
+                ),
+              ],
             ),
           ),
           Padding(
