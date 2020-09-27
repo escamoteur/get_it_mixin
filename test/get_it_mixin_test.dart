@@ -29,10 +29,8 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
     final name = watchX((Model x) => x.name);
     final nestedCountry =
         watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
-    final streamResult =
-        watchStream((Model x) => x.stream, 'initialStreamValue');
-    final futureResult =
-        watchFuture((Model x) => x.future, 'initialStreamValue');
+    final streamResult = watchStream((Model x) => x.stream, 'streamResult');
+    final futureResult = watchFuture((Model x) => x.future, 'futureResult');
 
     return Directionality(
       textDirection: TextDirection.ltr,
@@ -58,9 +56,9 @@ ValueNotifier<String> valNotifier;
 int buildCount;
 
 void main() {
-  setUp(() {
+  setUp(() async {
     buildCount = 0;
-    GetIt.I.reset();
+    await GetIt.I.reset();
     valNotifier = ValueNotifier<String>('notifierVal');
     theModel = Model(
         constantValue: 'constantValue',
