@@ -61,15 +61,15 @@ void main() {
     await GetIt.I.reset();
     valNotifier = ValueNotifier<String>('notifierVal');
     theModel = Model(
-        constantValue: 'constantValue',
+        constantValue: 'onlyRead',
         country: 'country',
         name: ValueNotifier('name'),
-        nestedModel: Model(country: 'country'));
+        nestedModel: Model(country: 'nestedCountry'));
     GetIt.I.registerSingleton<Model>(theModel);
     GetIt.I.registerSingleton(valNotifier);
   });
 
-  testWidgets('useListenable', (tester) async {
+  testWidgets('onetime access without any data changes', (tester) async {
     await tester.pumpWidget(TestStateLessWidget());
     await tester.pump();
 
@@ -85,6 +85,12 @@ void main() {
     final futureResult =
         tester.widget<Text>(find.byKey(Key('futureResult'))).data;
 
-    print(onlyRead);
+    expect(onlyRead, 'onlyRead');
+    expect(notifierVal, 'notifierVal');
+    expect(country, 'country');
+    expect(name, 'name');
+    expect(nestedCountry, 'nestedCountry');
+    expect(streamResult, 'streamResult');
+    expect(futureResult, 'futureResult');
   });
 }
