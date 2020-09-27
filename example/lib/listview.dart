@@ -6,7 +6,7 @@ class WeatherListView extends StatelessWidget with GetItMixin {
   WeatherListView();
   @override
   Widget build(BuildContext context) {
-    final data = watchX((TheViewModel x) => x.updateWeatherCommand).value;
+    final data = watchX((TheViewModel x) => x.updateWeatherCommand);
 
     return ListView.builder(
       itemCount: data.length,

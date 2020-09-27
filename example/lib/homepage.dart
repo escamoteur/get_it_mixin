@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_weather_demo/the_viewmodel.dart';
 import 'package:functional_listener/functional_listener.dart';
-import 'package:get_it/get_it.dart';
 import 'package:get_it_mixin/get_it_mixin.dart';
 
 import 'listview.dart';
@@ -41,6 +40,10 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
   Widget build(BuildContext context) {
     final isRunning =
         watchX((TheViewModel x) => x.updateWeatherCommand.isExecuting);
+    final updateButtonEnbaled =
+        watchX((TheViewModel x) => x.updateWeatherCommand.canExecute);
+    final switchValue = watchX((TheViewModel x) => x.setExecutionStateCommand);
+
     return Scaffold(
       appBar: AppBar(title: Text("WeatherDemo")),
       body: Column(
@@ -57,7 +60,7 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
                 fontSize: 20.0,
                 color: Color.fromARGB(255, 0, 0, 0),
               ),
-              onChanged: GetIt.I<TheViewModel>().textChangedCommand,
+              onChanged: get<TheViewModel>().textChangedCommand,
             ),
           ),
           Expanded(
@@ -66,7 +69,7 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
               children: [
                 WeatherListView(),
                 // if true we show a busy Spinner otherwise the ListView
-                if (isRunning.value == true)
+                if (isRunning == true)
                   Center(
                     child: Container(
                       width: 50.0,
@@ -83,33 +86,19 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
             child: Row(
               children: <Widget>[
                 Expanded(
-                  child: ValueListenableBuilder<bool>(
-                    valueListenable:
-                        GetIt.I<TheViewModel>().updateWeatherCommand.canExecute,
-                    builder: (BuildContext context, bool canExecute, _) {
-                      // Depending on the value of canEcecute we set or clear the Handler
-                      final handler = canExecute
-                          ? GetIt.I<TheViewModel>().updateWeatherCommand
-                          : null;
-                      return RaisedButton(
-                        child: Text("Update"),
-                        color: Color.fromARGB(255, 33, 150, 243),
-                        textColor: Color.fromARGB(255, 255, 255, 255),
-                        onPressed: handler,
-                      );
-                    },
+                  child: RaisedButton(
+                    child: Text("Update"),
+                    color: Color.fromARGB(255, 33, 150, 243),
+                    textColor: Color.fromARGB(255, 255, 255, 255),
+                    onPressed: updateButtonEnbaled
+                        ? get<TheViewModel>().updateWeatherCommand
+                        : null,
                   ),
                 ),
-                ValueListenableBuilder<bool>(
-                    valueListenable:
-                        GetIt.I<TheViewModel>().setExecutionStateCommand,
-                    builder: (context, value, _) {
-                      return Switch(
-                        value: value,
-                        onChanged:
-                            GetIt.I<TheViewModel>().setExecutionStateCommand,
-                      );
-                    })
+                Switch(
+                  value: switchValue,
+                  onChanged: get<TheViewModel>().setExecutionStateCommand,
+                ),
               ],
             ),
           ),

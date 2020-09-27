@@ -39,21 +39,25 @@ mixin GetItMixin on StatelessWidget {
     return accessor(GetIt.I<T>(instanceName: instanceName));
   }
 
+  /// To observe `ValueListenables`
   /// like [get] but it also registers a listener to [T] and
-  /// triggers a rebuild every time [T] signals a change
-  T watch<T extends Listenable>({String instanceName}) =>
-      _state.value.watch<T>(instanceName: instanceName);
+  /// triggers a rebuild every time [T].value changes
+  R watch<T extends ValueListenable<R>, R>({String instanceName}) =>
+      _state.value.watch<T>(instanceName: instanceName).value;
 
-  /// like [get] but it also registers a listener to the result of [select] and
-  /// triggers a rebuild every time signals [R] a change
-  /// useful if the `Listenable` [R] is a member of your business object [T]
-  R watchX<T, R extends Listenable>(
-    R Function(T) select, {
+  /// like watch but it only triggers a rebuild when the value of
+  /// the `ValueListenable`, that the function [select] returns changes
+  /// useful if the `ValueListenable` is a member of your business object [T]
+  R watchX<T, R>(
+    ValueListenable<R> Function(T) select, {
     String instanceName,
   }) =>
-      _state.value.watchX<T, R>(select, instanceName: instanceName);
+      _state.value
+          .watchX<T, ValueListenable<R>>(select, instanceName: instanceName)
+          .value;
 
-  /// like watch but it only triggers a rebuild when the value that the function
+  /// like watch but for simple `Listenable` objects.
+  /// It only triggers a rebuild when the value that
   /// [only] returns changes. With that you can react to changes of single members
   /// of [T]
   R watchOnly<T extends Listenable, R>(
@@ -62,10 +66,11 @@ mixin GetItMixin on StatelessWidget {
   }) =>
       _state.value.watchOnly<T, R>(only, instanceName: instanceName);
 
-  /// a combination of [watchX] and [watchOnly]
+  /// a combination of [watchX] and [watchOnly] for simple
+  /// `Listenable` members [Q] of your object [T]
   R watchXOnly<T, Q extends Listenable, R>(
     Q Function(T) select,
-    R Function(Q) only, {
+    R Function(Q listenable) only, {
     String instanceName,
   }) =>
       _state.value
@@ -194,22 +199,26 @@ mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
     return accessor(GetIt.I<T>(instanceName: instanceName));
   }
 
+  /// To observe `ValueListenables`
   /// like [get] but it also registers a listener to [T] and
-  /// triggers a rebuild every time [T] signals a change
-  T watch<T extends Listenable>({String instanceName}) =>
-      _state.value.watch<T>(instanceName: instanceName);
+  /// triggers a rebuild every time [T].value changes
+  R watch<T extends ValueListenable<R>, R>({String instanceName}) =>
+      _state.value.watch<T>(instanceName: instanceName).value;
 
-  /// like [get] but it also registers a listener to the result of [select] and
-  /// triggers a rebuild every time signals [R] a change
-  /// useful if the `listenable` [R] is a member of your business object [T]
-  R watchX<T, R extends Listenable>(
-    R Function(T) select, {
+  /// like watch but it only triggers a rebuild when the value of
+  /// the `ValueListenable`, that the function [select] returns changes
+  /// useful if the `ValueListenable` is a member of your business object [T]
+  R watchX<T, R>(
+    ValueListenable<R> Function(T) select, {
     String instanceName,
   }) =>
-      _state.value.watchX<T, R>(select, instanceName: instanceName);
+      _state.value
+          .watchX<T, ValueListenable<R>>(select, instanceName: instanceName)
+          .value;
 
-  /// like watch but it only triggers a rebuild when the value that the function
-  /// [only] returns changes. with that you can react to changes of single members
+  /// like watch but for simple `Listenable` objects.
+  /// It only triggers a rebuild when the value that
+  /// [only] returns changes. With that you can react to changes of single members
   /// of [T]
   R watchOnly<T extends Listenable, R>(
     R Function(T) only, {
@@ -217,10 +226,11 @@ mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
   }) =>
       _state.value.watchOnly<T, R>(only, instanceName: instanceName);
 
-  /// a combination of [watchx] and [watchonly]
-  R watchXonly<T, Q extends Listenable, R>(
+  /// a combination of [watchX] and [watchOnly] for simple
+  /// `Listenable` members [Q] of your object [T]
+  R watchXOnly<T, Q extends Listenable, R>(
     Q Function(T) select,
-    R Function(Q) only, {
+    R Function(Q listenable) only, {
     String instanceName,
   }) =>
       _state.value
