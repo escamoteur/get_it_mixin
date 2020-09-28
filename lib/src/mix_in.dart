@@ -324,45 +324,42 @@ mixin _GetItElement on ComponentElement {
   }
 }
 
-class _WatchEntry<T, R> extends LinkedListEntry<_WatchEntry<Object, Object>> {
-  T currentListenable;
+class _WatchEntry<TObservedObject, TValue>
+    extends LinkedListEntry<_WatchEntry<Object, Object>> {
+  TObservedObject observedObject;
   Function notificationHandler;
   StreamSubscription subscription;
-  Stream currentStream;
-  Future currentFuture;
-  R Function(T) selector;
+  TValue Function(TObservedObject) selector;
   void Function(_WatchEntry entry) _dispose;
-  dynamic lastValue;
+  TValue lastValue;
   _WatchEntry(
       {this.notificationHandler,
       this.subscription,
-      this.currentFuture,
       void Function(_WatchEntry entry) dispose,
       this.lastValue,
       this.selector,
-      this.currentStream,
-      this.currentListenable})
+      this.observedObject})
       : _dispose = dispose;
   void dispose() {
     _dispose(this);
   }
 
-  bool watchesTheSame(_WatchEntry<T, R> entry) {
-    if (entry.currentListenable != null) {
-      if (entry.currentListenable == currentListenable) {
-        if (entry.selector != null && selector != null) {
-          return entry.selector(entry.currentListenable) ==
-              selector(currentListenable);
+  TValue getSelectedValue() {
+    assert(selector != null);
+    return selector(observedObject);
+  }
+
+  bool get hasSelector => selector != null;
+
+  bool watchesTheSame(_WatchEntry entry) {
+    if (entry.observedObject != null) {
+      if (entry.observedObject == observedObject) {
+        if (entry.hasSelector && hasSelector) {
+          return entry.getSelectedValue() == getSelectedValue();
         }
         return true;
       }
       return false;
-    }
-    if (entry.currentStream != null) {
-      return entry.currentStream == currentStream;
-    }
-    if (entry.currentFuture != null) {
-      return entry.currentFuture == currentFuture;
     }
     return false;
   }
@@ -407,8 +404,8 @@ class _MixinState {
 
     if (watch == null) {
       final handler = () => _element.markNeedsBuild();
-      _appendWatch(_WatchEntry(
-        currentListenable: listenable,
+      _appendWatch(_WatchEntry<Listenable, Listenable>(
+        observedObject: listenable,
         lastValue: listenable,
         notificationHandler: handler,
         dispose: (x) => listenable.removeListener(x.notificationHandler),
@@ -430,7 +427,7 @@ class _MixinState {
     _WatchEntry watch = _getWatch();
 
     if (watch != null) {
-      if (listenable == watch.currentListenable) {
+      if (listenable == watch.observedObject) {
         return listenable;
       } else {
         /// select returned a different value than the last time
@@ -438,9 +435,8 @@ class _MixinState {
         watch.dispose();
       }
     } else {
-      watch = _WatchEntry<T, R>(
-        currentListenable: listenable,
-        selector: select,
+      watch = _WatchEntry<R, R>(
+        observedObject: listenable,
         dispose: (x) => listenable.removeListener(
           x.notificationHandler,
         ),
@@ -450,7 +446,7 @@ class _MixinState {
 
     final handler = () => _element.markNeedsBuild();
     watch.notificationHandler = handler;
-    watch.currentListenable = listenable;
+    watch.observedObject = listenable;
 
     listenable.addListener(handler);
     return listenable;
@@ -467,8 +463,9 @@ class _MixinState {
 
     if (alreadyRegistered == null) {
       final onlyTarget = only(parentObject);
-      final watch = _WatchEntry(
-          currentListenable: parentObject,
+      final watch = _WatchEntry<T, R>(
+          observedObject: parentObject,
+          selector: only,
           lastValue: onlyTarget,
           dispose: (x) => parentObject.removeListener(x.notificationHandler));
 
@@ -501,7 +498,7 @@ class _MixinState {
     _WatchEntry watch = _getWatch();
 
     if (watch != null) {
-      if (listenable == watch.currentListenable) {
+      if (listenable == watch.observedObject) {
         return watch.lastValue;
       } else {
         /// select returned a different value than the last time
@@ -509,8 +506,10 @@ class _MixinState {
         watch.dispose();
       }
     } else {
-      watch = _WatchEntry(
+      watch = _WatchEntry<Q, R>(
+          observedObject: listenable,
           lastValue: only(listenable),
+          selector: only,
           dispose: (x) => listenable.removeListener(x.notificationHandler));
       _appendWatch(watch);
     }
@@ -523,7 +522,7 @@ class _MixinState {
       }
     };
 
-    watch.currentListenable = listenable;
+    watch.observedObject = listenable;
     watch.notificationHandler = handler;
 
     listenable.addListener(handler);
@@ -544,7 +543,7 @@ class _MixinState {
     _WatchEntry watch = _getWatch();
 
     if (watch != null) {
-      if (stream == watch.currentStream) {
+      if (stream == watch.observedObject) {
         ///  still the same stream so we can directly return lastvalue
         return watch.lastValue;
       } else {
@@ -555,8 +554,8 @@ class _MixinState {
             preserveState ? watch.lastValue ?? initialValue : initialValue;
       }
     } else {
-      watch = _WatchEntry(
-          dispose: (x) => x.subscription.cancel(), currentStream: stream);
+      watch = _WatchEntry<Stream<R>, AsyncSnapshot<R>>(
+          dispose: (x) => x.subscription.cancel(), observedObject: stream);
       _appendWatch(watch);
     }
 
@@ -573,7 +572,7 @@ class _MixinState {
       },
     );
     watch.subscription = subscription;
-    watch.currentStream = stream;
+    watch.observedObject = stream;
     watch.lastValue =
         AsyncSnapshot<R>.withData(ConnectionState.waiting, initialValue);
 
@@ -591,7 +590,7 @@ class _MixinState {
     _WatchEntry watch = _getWatch();
 
     if (watch != null) {
-      if (future == watch.currentFuture) {
+      if (future == watch.observedObject) {
         ///  still the same Future so we can directly return lastvalue
         return watch.lastValue;
       } else {
@@ -602,22 +601,23 @@ class _MixinState {
             preserveState ? watch.lastValue ?? initialValue : initialValue;
       }
     } else {
-      watch = _WatchEntry(
-          dispose: (x) => x.currentFuture = null, currentFuture: future);
+      watch = _WatchEntry<Future<R>, AsyncSnapshot<R>>(
+          dispose: (x) => x.observedObject = null, observedObject: future);
+
       _appendWatch(watch);
     }
 
-    watch.currentFuture = future;
+    watch.observedObject = future;
     future.then(
       (x) {
-        if (watch.currentFuture != null) {
+        if (watch.observedObject != null) {
           // only update if Future is still valid
           watch.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
           _element.markNeedsBuild();
         }
       },
       onError: (error) {
-        if (watch.currentFuture != null) {
+        if (watch.observedObject != null) {
           watch.lastValue =
               AsyncSnapshot.withError(ConnectionState.active, error);
           _element.markNeedsBuild();

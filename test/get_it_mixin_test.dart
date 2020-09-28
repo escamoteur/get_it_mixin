@@ -148,4 +148,39 @@ void main() {
 
     expect(tester.takeException(), isA<ArgumentError>());
   });
+
+  testWidgets('watchOnlyTwice', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      watchOnlyTwice: true,
+    ));
+    await tester.pump();
+
+    expect(tester.takeException(), isA<ArgumentError>());
+  });
+
+  testWidgets('watchXOnlyTwice', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      watchXonlytwice: true,
+    ));
+    await tester.pump();
+
+    expect(tester.takeException(), isA<ArgumentError>());
+  });
+
+  testWidgets('watchStream', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      watchStreamTwice: true,
+    ));
+    await tester.pump();
+
+    expect(tester.takeException(), isA<ArgumentError>());
+  });
+  testWidgets('watchFuture', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      watchFutureTwice: true,
+    ));
+    await tester.pump();
+
+    expect(tester.takeException(), isA<ArgumentError>());
+  });
 }
