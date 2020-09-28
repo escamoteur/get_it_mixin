@@ -20,6 +20,23 @@ class Model extends ChangeNotifier {
 }
 
 class TestStateLessWidget extends StatelessWidget with GetItMixin {
+  final bool watchTwice;
+  final bool watchOnlyTwice;
+  final bool watchXtwice;
+  final bool watchXonlytwice;
+  final bool watchStreamTwice;
+  final bool watchFutureTwice;
+
+  TestStateLessWidget(
+      {Key key,
+      this.watchTwice = false,
+      this.watchOnlyTwice = false,
+      this.watchXtwice = false,
+      this.watchXonlytwice = false,
+      this.watchStreamTwice = false,
+      this.watchFutureTwice = false})
+      : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     buildCount++;
@@ -31,8 +48,26 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
         watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
     final streamResult = watchStream((Model x) => x.stream, 'streamResult');
     final futureResult = watchFuture((Model x) => x.future, 'futureResult');
-    final futureResult1 = watchFuture((Model x) => x.future, 'futureResult');
 
+    if (watchTwice) {
+      final notifierVal = watch<ValueNotifier<String>, String>();
+    }
+    if (watchOnlyTwice) {
+      final country = watchOnly((Model x) => x.country);
+    }
+    if (watchXtwice) {
+      final name = watchX((Model x) => x.name);
+    }
+    if (watchXonlytwice) {
+      final nestedCountry =
+          watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
+    }
+    if (watchStreamTwice) {
+      final streamResult = watchStream((Model x) => x.stream, 'streamResult');
+    }
+    if (watchFutureTwice) {
+      final futureResult = watchFuture((Model x) => x.future, 'futureResult');
+    }
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Container(
@@ -94,5 +129,23 @@ void main() {
     expect(streamResult, 'streamResult');
     expect(futureResult, 'futureResult');
     expect(buildCount, 1);
+  });
+
+  testWidgets('wathTwice', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      watchTwice: true,
+    ));
+    await tester.pump();
+
+    expect(tester.takeException(), isA<ArgumentError>());
+  });
+
+  testWidgets('wathXtwice', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      watchXtwice: true,
+    ));
+    await tester.pump();
+
+    expect(tester.takeException(), isA<ArgumentError>());
   });
 }

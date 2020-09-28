@@ -324,13 +324,13 @@ mixin _GetItElement on ComponentElement {
   }
 }
 
-class _WatchEntry extends LinkedListEntry<_WatchEntry> {
-  Listenable currentListenable;
+class _WatchEntry<T, R> extends LinkedListEntry<_WatchEntry<Object, Object>> {
+  T currentListenable;
   Function notificationHandler;
   StreamSubscription subscription;
   Stream currentStream;
   Future currentFuture;
-  R Function<T, R>(T) selector;
+  R Function(T) selector;
   void Function(_WatchEntry entry) _dispose;
   dynamic lastValue;
   _WatchEntry(
@@ -347,13 +347,14 @@ class _WatchEntry extends LinkedListEntry<_WatchEntry> {
     _dispose(this);
   }
 
-  bool watchesTheSame(_WatchEntry entry) {
+  bool watchesTheSame(_WatchEntry<T, R> entry) {
     if (entry.currentListenable != null) {
       if (entry.currentListenable == currentListenable) {
         if (entry.selector != null && selector != null) {
           return entry.selector(entry.currentListenable) ==
-              selector(currentFuture);
+              selector(currentListenable);
         }
+        return true;
       }
       return false;
     }
@@ -437,7 +438,9 @@ class _MixinState {
         watch.dispose();
       }
     } else {
-      watch = _WatchEntry(
+      watch = _WatchEntry<T, R>(
+        currentListenable: listenable,
+        selector: select,
         dispose: (x) => listenable.removeListener(
           x.notificationHandler,
         ),
@@ -604,7 +607,8 @@ class _MixinState {
       _appendWatch(watch);
     }
 
-    watch.currentFuture = future.then(
+    watch.currentFuture = future;
+    future.then(
       (x) {
         if (watch.currentFuture != null) {
           // only update if Future is still valid
