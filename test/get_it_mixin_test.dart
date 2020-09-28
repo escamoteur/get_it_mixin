@@ -31,6 +31,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
         watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
     final streamResult = watchStream((Model x) => x.stream, 'streamResult');
     final futureResult = watchFuture((Model x) => x.future, 'futureResult');
+    final futureResult1 = watchFuture((Model x) => x.future, 'futureResult');
 
     return Directionality(
       textDirection: TextDirection.ltr,
@@ -92,5 +93,6 @@ void main() {
     expect(nestedCountry, 'nestedCountry');
     expect(streamResult, 'streamResult');
     expect(futureResult, 'futureResult');
+    expect(buildCount, 1);
   });
 }

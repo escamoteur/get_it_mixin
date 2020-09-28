@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/src/widgets/async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 
@@ -331,6 +330,7 @@ class _WatchEntry extends LinkedListEntry<_WatchEntry> {
   StreamSubscription subscription;
   Stream currentStream;
   Future currentFuture;
+  R Function<T, R>(T) selector;
   void Function(_WatchEntry entry) _dispose;
   dynamic lastValue;
   _WatchEntry(
@@ -339,18 +339,38 @@ class _WatchEntry extends LinkedListEntry<_WatchEntry> {
       this.currentFuture,
       void Function(_WatchEntry entry) dispose,
       this.lastValue,
+      this.selector,
       this.currentStream,
       this.currentListenable})
       : _dispose = dispose;
   void dispose() {
     _dispose(this);
   }
+
+  bool watchesTheSame(_WatchEntry entry) {
+    if (entry.currentListenable != null) {
+      if (entry.currentListenable == currentListenable) {
+        if (entry.selector != null && selector != null) {
+          return entry.selector(entry.currentListenable) ==
+              selector(currentFuture);
+        }
+      }
+      return false;
+    }
+    if (entry.currentStream != null) {
+      return entry.currentStream == currentStream;
+    }
+    if (entry.currentFuture != null) {
+      return entry.currentFuture == currentFuture;
+    }
+    return false;
+  }
 }
 
 class _MixinState {
   Element _element;
 
-  LinkedList<_WatchEntry> watchList = LinkedList<_WatchEntry>();
+  LinkedList<_WatchEntry> _watchList = LinkedList<_WatchEntry>();
   _WatchEntry currentWatch;
 
   void init(Element element) {
@@ -358,7 +378,7 @@ class _MixinState {
   }
 
   void resetCurrentWatch() {
-    currentWatch = watchList.isNotEmpty ? watchList.first : null;
+    currentWatch = _watchList.isNotEmpty ? _watchList.first : null;
   }
 
   _WatchEntry _getWatch<T>() {
@@ -371,7 +391,12 @@ class _MixinState {
   }
 
   void _appendWatch(_WatchEntry entry) {
-    watchList.add(entry);
+    for (final watch in _watchList) {
+      if (watch.watchesTheSame(entry)) {
+        throw ArgumentError('This Object is already watched by get_it_mixin');
+      }
+    }
+    _watchList.add(entry);
     currentWatch = null;
   }
 
@@ -438,9 +463,10 @@ class _MixinState {
     _WatchEntry alreadyRegistered = _getWatch();
 
     if (alreadyRegistered == null) {
+      final onlyTarget = only(parentObject);
       final watch = _WatchEntry(
           currentListenable: parentObject,
-          lastValue: only(parentObject),
+          lastValue: onlyTarget,
           dispose: (x) => parentObject.removeListener(x.notificationHandler));
 
       final handler = () {
@@ -526,7 +552,8 @@ class _MixinState {
             preserveState ? watch.lastValue ?? initialValue : initialValue;
       }
     } else {
-      watch = _WatchEntry(dispose: (x) => x.subscription.cancel());
+      watch = _WatchEntry(
+          dispose: (x) => x.subscription.cancel(), currentStream: stream);
       _appendWatch(watch);
     }
 
@@ -555,13 +582,13 @@ class _MixinState {
       {String instanceName, bool preserveState}) {
     assert(select != null, 'select can\'t be null if you use watchStream');
     final parentObject = GetIt.I<T>(instanceName: instanceName);
-    final Future = select(parentObject);
-    assert(Future != null, 'select returned null in watchX');
+    final future = select(parentObject);
+    assert(future != null, 'select returned null in watchX');
 
     _WatchEntry watch = _getWatch();
 
     if (watch != null) {
-      if (Future == watch.currentFuture) {
+      if (future == watch.currentFuture) {
         ///  still the same Future so we can directly return lastvalue
         return watch.lastValue;
       } else {
@@ -572,11 +599,12 @@ class _MixinState {
             preserveState ? watch.lastValue ?? initialValue : initialValue;
       }
     } else {
-      watch = _WatchEntry(dispose: (x) => x.currentFuture = null);
+      watch = _WatchEntry(
+          dispose: (x) => x.currentFuture = null, currentFuture: future);
       _appendWatch(watch);
     }
 
-    watch.currentFuture = Future.then(
+    watch.currentFuture = future.then(
       (x) {
         if (watch.currentFuture != null) {
           // only update if Future is still valid
@@ -608,8 +636,8 @@ class _MixinState {
   }
 
   void clearRegistratons() {
-    watchList.forEach((x) => x.dispose());
-    watchList.clear();
+    _watchList.forEach((x) => x.dispose());
+    _watchList.clear();
     currentWatch = null;
   }
 
