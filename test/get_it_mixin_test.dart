@@ -17,7 +17,8 @@ class Model extends ChangeNotifier {
   String get country => _country;
   final ValueNotifier<String> name;
   final Model nestedModel;
-  final StreamController<String> streamController = StreamController<String>();
+  final StreamController<String> streamController =
+      StreamController<String>.broadcast();
 
   Model({this.constantValue, String country, this.name, this.nestedModel})
       : _country = country;
@@ -56,7 +57,18 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
         watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
     final streamResult = watchStream((Model x) => x.stream, 'streamResult');
     final futureResult = watchFuture((Model x) => x.future, 'futureResult');
-
+    registerStreamHandler((Model x) => x.stream, (x, cancel) {
+      streamHandlerResult = x;
+      if (x == 'Cancel') {
+        cancel();
+      }
+    });
+    registerValueListenableHandler((Model x) => x.name, (x, cancel) {
+      listenableHandlerResult = x;
+      if (x == 'Cancel') {
+        cancel();
+      }
+    });
     if (watchTwice) {
       final notifierVal = watch<ValueNotifier<String>, String>();
     }
@@ -98,10 +110,14 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
 Model theModel;
 ValueNotifier<String> valNotifier;
 int buildCount;
+String streamHandlerResult;
+String listenableHandlerResult;
 
 void main() {
   setUp(() async {
     buildCount = 0;
+    streamHandlerResult = null;
+    listenableHandlerResult = null;
     await GetIt.I.reset();
     valNotifier = ValueNotifier<String>('notifierVal');
     theModel = Model(
@@ -354,12 +370,9 @@ void main() {
   });
   testWidgets('watchFuture', (tester) async {
     await tester.pumpWidget(TestStateLessWidget());
-    // final widget = TestStateLessWidget();
-    // await tester.pumpWidget(widget);
     theModel.completer.complete('42');
+    await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
     await tester.pump();
-    await tester.pump();
-    await tester.runAsync(() => Future.delayed(Duration(seconds: 5)));
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
     final notifierVal =
@@ -411,5 +424,51 @@ void main() {
     expect(streamResult, 'streamResult');
     expect(futureResult, 'futureResult');
     expect(buildCount, 2);
+  });
+  testWidgets('check that everything is released', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget());
+
+    expect(theModel.hasListeners, true);
+    expect(theModel.name.hasListeners, true);
+    expect(theModel.streamController.hasListener, true);
+    expect(valNotifier.hasListeners, true);
+
+    await tester.pumpWidget(SizedBox.shrink());
+
+    expect(theModel.hasListeners, false);
+    expect(theModel.name.hasListeners, false);
+    expect(theModel.streamController.hasListener, false);
+    expect(valNotifier.hasListeners, false);
+
+    expect(buildCount, 1);
+  });
+  testWidgets('test handlers', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget());
+
+    theModel.name.value = '42';
+    theModel.streamController.sink.add('4711');
+    await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
+
+    expect(streamHandlerResult, '4711');
+    expect(listenableHandlerResult, '42');
+
+    theModel.name.value = 'Cancel';
+    theModel.streamController.sink.add('Cancel');
+    await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
+
+    theModel.name.value = '42';
+    theModel.streamController.sink.add('4711');
+    await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
+
+    expect(streamHandlerResult, 'Cancel');
+    expect(listenableHandlerResult, 'Cancel');
+    expect(buildCount, 1);
+
+    await tester.pumpWidget(SizedBox.shrink());
+
+    expect(theModel.hasListeners, false);
+    expect(theModel.name.hasListeners, false);
+    expect(theModel.streamController.hasListener, false);
+    expect(valNotifier.hasListeners, false);
   });
 }

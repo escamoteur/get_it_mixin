@@ -123,9 +123,11 @@ mixin GetItMixin on StatelessWidget {
   /// stored in GetIt. If the object itself if the `ValueListenable` pass `(x)=>x` here
   /// If you set [executeImmediately] to `true` the handler will be called immediately
   /// with the current value of the `ValueListenable`.
+  /// All handler get passed in a [cancel] function that allows to kill the registration
+  /// from inside the handler.
   void registerValueListenableHandler<T, R>(
     ValueListenable<R> Function(T) select,
-    void Function(R newValue) handler, {
+    void Function(R newValue, void Function() cancel) handler, {
     bool executeImmediately = false,
     String instanceName,
   }) =>
@@ -138,14 +140,20 @@ mixin GetItMixin on StatelessWidget {
   /// stored in GetIt. If the object itself if the `ValueListenable` pass `(x)=>x` here
   /// If you pass [initialValue] your passed handler will be executes immediately
   /// with that value
+  /// As Streams can emit an error, you can register an optional [errorHandler]
+  /// All handler get passed in a [cancel] function that allows to kill the registration
+  /// from inside the handler.
   void registerStreamHandler<T, R>(
-    Stream<R> Function(T) select, {
+    Stream<R> Function(T) select,
+    void Function(R newValue, void Function() cancel) handler, {
+    void Function(Object error, void Function() cancel) errorHandler,
     R initialValue,
-    void Function(R newValue) handler,
     String instanceName,
   }) =>
       _state.value.registerStreamHandler<T, R>(select, handler,
-          initialValue: initialValue, instanceName: instanceName);
+          errorHandler: errorHandler,
+          initialValue: initialValue,
+          instanceName: instanceName);
 
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
   /// objects that should only exist as long as this scope exists.
@@ -420,10 +428,14 @@ class _MixinState {
     return null;
   }
 
-  void _appendWatch(_WatchEntry entry) {
-    for (final watch in _watchList) {
-      if (watch.watchesTheSame(entry)) {
-        throw ArgumentError('This Object is already watched by get_it_mixin');
+  /// We don't allow multiple watches on the same object but we allow multiple handler
+  /// that can be registered to the same observable object
+  void _appendWatch(_WatchEntry entry, {bool isHandler = false}) {
+    if (!isHandler) {
+      for (final watch in _watchList) {
+        if (watch.watchesTheSame(entry)) {
+          throw ArgumentError('This Object is already watched by get_it_mixin');
+        }
       }
     }
     _watchList.add(entry);
@@ -666,7 +678,7 @@ class _MixinState {
 
   void registerValueListenableHandler<T, R>(
     ValueListenable<R> Function(T) select,
-    void Function(R newValue) handler, {
+    void Function(R newValue, void Function() dispose) handler, {
     bool executeImmediately = false,
     String instanceName,
   }) {
@@ -696,22 +708,23 @@ class _MixinState {
           x.notificationHandler,
         ),
       );
-      _appendWatch(watch);
+      _appendWatch(watch, isHandler: true);
     }
 
-    final internalHandler = () => handler(listenable.value);
+    final internalHandler = () => handler(listenable.value, watch.dispose);
     watch.notificationHandler = internalHandler;
     watch.observedObject = listenable;
 
     listenable.addListener(internalHandler);
     if (executeImmediately) {
-      handler(listenable.value);
+      handler(listenable.value, watch.dispose);
     }
   }
 
   void registerStreamHandler<T, R>(
     Stream<R> Function(T) select,
-    void Function(R newValue) handler, {
+    void Function(R newValue, void Function() cancel) handler, {
+    void Function(Object error, void Function() cancel) errorHandler,
     R initialValue,
     String instanceName,
   }) {
@@ -736,13 +749,14 @@ class _MixinState {
     } else {
       watch = _WatchEntry<Stream<R>, Object>(
           observedObject: stream, dispose: (x) => x.subscription.cancel());
-      _appendWatch(watch);
+      _appendWatch(watch, isHandler: true);
     }
 
     watch.observedObject = stream;
-    watch.subscription = stream.listen((x) => handler(x));
+    watch.subscription =
+        stream.listen((x) => handler(x, watch.dispose), onError: errorHandler);
     if (initialValue != null) {
-      handler(initialValue);
+      handler(initialValue, watch.dispose);
     }
   }
 
