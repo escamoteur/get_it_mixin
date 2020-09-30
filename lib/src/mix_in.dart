@@ -117,6 +117,36 @@ mixin GetItMixin on StatelessWidget {
       _state.value.watchFuture<T, R>(select, initialValue,
           instanceName: instanceName, preserveState: preserveState);
 
+  /// registers a [handler] for a `ValueListenable` exactly once on the first build
+  /// and unregisters is when the widget is destroyed.
+  /// [select] allows you to register the handler to a member of the of the Object
+  /// stored in GetIt. If the object itself if the `ValueListenable` pass `(x)=>x` here
+  /// If you set [executeImmediately] to `true` the handler will be called immediately
+  /// with the current value of the `ValueListenable`.
+  void registerValueListenableHandler<T, R>(
+    ValueListenable<R> Function(T) select,
+    void Function(R newValue) handler, {
+    bool executeImmediately = false,
+    String instanceName,
+  }) =>
+      _state.value.registerValueListenableHandler<T, R>(select, handler,
+          instanceName: instanceName, executeImmediately: executeImmediately);
+
+  /// registers a [handler] for a `Stream` exactly once on the first build
+  /// and unregisters is when the widget is destroyed.
+  /// [select] allows you to register the handler to a member of the of the Object
+  /// stored in GetIt. If the object itself if the `ValueListenable` pass `(x)=>x` here
+  /// If you pass [initialValue] your passed handler will be executes immediately
+  /// with that value
+  void registerStreamHandler<T, R>(
+    Stream<R> Function(T) select, {
+    R initialValue,
+    void Function(R newValue) handler,
+    String instanceName,
+  }) =>
+      _state.value.registerStreamHandler<T, R>(select, handler,
+          initialValue: initialValue, instanceName: instanceName);
+
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
   /// objects that should only exist as long as this scope exists.
   /// Can be called inside the `build` method method of a `StatelessWidget`.
@@ -379,6 +409,8 @@ class _MixinState {
     currentWatch = _watchList.isNotEmpty ? _watchList.first : null;
   }
 
+  /// if _getWatch returns null it means this is either the very first or the las watch
+  /// in this list.
   _WatchEntry _getWatch<T>() {
     if (currentWatch != null) {
       final result = currentWatch;
@@ -611,13 +643,15 @@ class _MixinState {
     future.then(
       (x) {
         if (watch.observedObject != null) {
+          print('Future completed $x');
           // only update if Future is still valid
-          watch.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
+          watch.lastValue = AsyncSnapshot.withData(ConnectionState.done, x);
           _element.markNeedsBuild();
         }
       },
       onError: (error) {
         if (watch.observedObject != null) {
+          print('Future error');
           watch.lastValue =
               AsyncSnapshot.withError(ConnectionState.active, error);
           _element.markNeedsBuild();
@@ -628,6 +662,88 @@ class _MixinState {
         AsyncSnapshot<R>.withData(ConnectionState.waiting, initialValue);
 
     return watch.lastValue;
+  }
+
+  void registerValueListenableHandler<T, R>(
+    ValueListenable<R> Function(T) select,
+    void Function(R newValue) handler, {
+    bool executeImmediately = false,
+    String instanceName,
+  }) {
+    assert(
+        select != null,
+        'select can\'t be null if you use registerValueListenableHandler '
+        'if you want target directly pass (x)=>x');
+    final parentObject = GetIt.I<T>(instanceName: instanceName);
+    final listenable = select(parentObject);
+    assert(listenable != null,
+        'select returned null in registerValueListenableHandler');
+
+    _WatchEntry watch = _getWatch();
+
+    if (watch != null) {
+      if (listenable == watch.observedObject) {
+        return;
+      } else {
+        /// select returned a different value than the last time
+        /// so we have to unregister out handler and subscribe anew
+        watch.dispose();
+      }
+    } else {
+      watch = _WatchEntry<ValueListenable<R>, Object>(
+        observedObject: listenable,
+        dispose: (x) => listenable.removeListener(
+          x.notificationHandler,
+        ),
+      );
+      _appendWatch(watch);
+    }
+
+    final internalHandler = () => handler(listenable.value);
+    watch.notificationHandler = internalHandler;
+    watch.observedObject = listenable;
+
+    listenable.addListener(internalHandler);
+    if (executeImmediately) {
+      handler(listenable.value);
+    }
+  }
+
+  void registerStreamHandler<T, R>(
+    Stream<R> Function(T) select,
+    void Function(R newValue) handler, {
+    R initialValue,
+    String instanceName,
+  }) {
+    assert(
+        select != null,
+        'select can\'t be null if you use registerStreamHandler '
+        'if you want target directly pass (x)=>x');
+    final parentObject = GetIt.I<T>(instanceName: instanceName);
+    final stream = select(parentObject);
+    assert(stream != null, 'select returned null in registerStreamHandler');
+
+    _WatchEntry watch = _getWatch();
+
+    if (watch != null) {
+      if (stream == watch.observedObject) {
+        return;
+      } else {
+        /// select returned a different value than the last time
+        /// so we have to unregister out handler and subscribe anew
+        watch.dispose();
+      }
+    } else {
+      watch = _WatchEntry<Stream<R>, Object>(
+          observedObject: stream, dispose: (x) => x.subscription.cancel());
+      _appendWatch(watch);
+    }
+
+    watch.observedObject = stream;
+    watch.subscription = stream.listen((x) => handler(x));
+    if (initialValue != null) {
+      handler(initialValue);
+    }
   }
 
   bool _scopeWasPushed = false;

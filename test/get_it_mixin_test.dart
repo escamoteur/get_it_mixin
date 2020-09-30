@@ -175,7 +175,7 @@ void main() {
     expect(tester.takeException(), isA<ArgumentError>());
   });
 
-  testWidgets('watchStream', (tester) async {
+  testWidgets('watchStream twice', (tester) async {
     await tester.pumpWidget(TestStateLessWidget(
       watchStreamTwice: true,
     ));
@@ -183,7 +183,7 @@ void main() {
 
     expect(tester.takeException(), isA<ArgumentError>());
   });
-  testWidgets('watchFuture', (tester) async {
+  testWidgets('watchFuture twice', (tester) async {
     await tester.pumpWidget(TestStateLessWidget(
       watchFutureTwice: true,
     ));
@@ -298,9 +298,10 @@ void main() {
     expect(futureResult, 'futureResult');
     expect(buildCount, 2);
   });
-  testWidgets('test watchOnly', (tester) async {
+  testWidgets('test watchOnly with notification but no value change',
+      (tester) async {
     await tester.pumpWidget(TestStateLessWidget());
-    theModel.country = '42';
+    theModel.notifyListeners();
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
@@ -317,12 +318,12 @@ void main() {
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
-    expect(country, '42');
+    expect(country, 'country');
     expect(name, 'name');
     expect(nestedCountry, 'nestedCountry');
     expect(streamResult, 'streamResult');
     expect(futureResult, 'futureResult');
-    expect(buildCount, 2);
+    expect(buildCount, 1);
   });
   testWidgets('watchStream', (tester) async {
     await tester.pumpWidget(TestStateLessWidget());
@@ -352,12 +353,42 @@ void main() {
     expect(buildCount, 2);
   });
   testWidgets('watchFuture', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget());
     // final widget = TestStateLessWidget();
     // await tester.pumpWidget(widget);
-    await tester.pumpWidget(TestStateLessWidget());
     theModel.completer.complete('42');
     await tester.pump();
     await tester.pump();
+    await tester.runAsync(() => Future.delayed(Duration(seconds: 5)));
+
+    final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
+    final notifierVal =
+        tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
+    final country = tester.widget<Text>(find.byKey(Key('country'))).data;
+    final name = tester.widget<Text>(find.byKey(Key('name'))).data;
+    final nestedCountry =
+        tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
+    final streamResult =
+        tester.widget<Text>(find.byKey(Key('streamResult'))).data;
+    final futureResult =
+        tester.widget<Text>(find.byKey(Key('futureResult'))).data;
+
+    final error = tester.takeException();
+    print(error);
+    print('before expect');
+    expect(onlyRead, 'onlyRead');
+    expect(notifierVal, 'notifierVal');
+    expect(country, 'country');
+    expect(name, 'name');
+    expect(nestedCountry, 'nestedCountry');
+    expect(streamResult, 'streamResult');
+    expect(futureResult, '42');
+    expect(buildCount, 2);
+  });
+  testWidgets('change multiple data', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget());
+    theModel.name.value = '42';
+    theModel._country = 'Lummerland';
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
@@ -374,11 +405,11 @@ void main() {
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
-    expect(country, 'country');
-    expect(name, 'name');
+    expect(country, 'Lummerland');
+    expect(name, '42');
     expect(nestedCountry, 'nestedCountry');
     expect(streamResult, 'streamResult');
-    expect(futureResult, '42');
+    expect(futureResult, 'futureResult');
     expect(buildCount, 2);
   });
 }
