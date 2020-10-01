@@ -186,23 +186,74 @@ class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement
   }
 }
 
-mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
-  /// this is an ugly hack so that you don't get a warning in the statelesswidget
+mixin GetItStatefulWidgetMixin on StatefulWidget {
+  /// this is an ugly hack so that you don't get a warning in the StatelessWidget
+  final _MutableWrapper<_MixinState> _state = _MutableWrapper<_MixinState>();
+  @override
+  StatefulElement createElement() => _StatefulMixInElement(this);
+}
+
+class _StatefulMixInElement<W extends GetItStatefulWidgetMixin>
+    extends StatefulElement with _GetItElement {
+  _StatefulMixInElement(
+    W widget,
+  ) : super(widget) {
+    _state = _MixinState();
+    widget._state.value = _state;
+  }
+  @override
+  W get widget => super.widget;
+
+  @override
+  void update(W newWidget) {
+    newWidget._state.value = _state;
+    super.update(newWidget);
+  }
+
+  @override
+  void mount(Element parent, newSlot) {
+    _state.init(this);
+    super.mount(parent, newSlot);
+  }
+
+  @override
+  Widget build() {
+    _state.resetCurrentWatch();
+    return super.build();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+  }
+
+  @override
+  void unmount() {
+    _state.dispose();
+    super.unmount();
+  }
+}
+
+mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
+  /// this is an ugly hack so that you don't get a warning in the statefulwidget
   final _MutableWrapper<_MixinState> _state = _MutableWrapper<_MixinState>();
   @override
   void initState() {
+    print('initState');
     _state.value = _MixinState();
     super.initState();
   }
 
   @override
   void didChangeDependencies() {
+    print('didChangeDependency');
     _state.value.init(context);
     super.didChangeDependencies();
   }
 
   @override
   void didUpdateWidget(Widget newWidget) {
+    print('didUpdateWidget');
     _state.value.clearRegistratons();
     _state.value.resetCurrentWatch();
     super.didUpdateWidget(newWidget);
@@ -240,7 +291,7 @@ mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
   /// like [get] but it also registers a listener to [T] and
   /// triggers a rebuild every time [T].value changes
   R watch<T extends ValueListenable<R>, R>({String instanceName}) =>
-      _state.value.watch<T>(instanceName: instanceName).value;
+      widget._state.value.watch<T>(instanceName: instanceName).value;
 
   /// like watch but it only triggers a rebuild when the value of
   /// the `ValueListenable`, that the function [select] returns changes
@@ -249,7 +300,7 @@ mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
     ValueListenable<R> Function(T) select, {
     String instanceName,
   }) =>
-      _state.value
+      widget._state.value
           .watchX<T, ValueListenable<R>>(select, instanceName: instanceName)
           .value;
 
@@ -261,7 +312,7 @@ mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
     R Function(T) only, {
     String instanceName,
   }) =>
-      _state.value.watchOnly<T, R>(only, instanceName: instanceName);
+      widget._state.value.watchOnly<T, R>(only, instanceName: instanceName);
 
   /// a combination of [watchX] and [watchOnly] for simple
   /// `Listenable` members [Q] of your object [T]
@@ -270,7 +321,7 @@ mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
     R Function(Q listenable) only, {
     String instanceName,
   }) =>
-      _state.value
+      widget._state.value
           .watchXOnly<T, Q, R>(select, only, instanceName: instanceName);
 
   /// subscribes to the `Stream` returned by [select] and returns
@@ -290,7 +341,7 @@ mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
     String instanceName,
     bool preserveState = true,
   }) =>
-      _state.value.watchStream<T, R>(select, initialValue,
+      widget._state.value.watchStream<T, R>(select, initialValue,
           instanceName: instanceName, preserveState: preserveState);
 
   /// awaits the ` Future` returned by [select] and triggers a rebuild as soon
@@ -312,8 +363,46 @@ mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
     String instanceName,
     bool preserveState = true,
   }) =>
-      _state.value.watchFuture<T, R>(select, initialValue,
+      widget._state.value.watchFuture<T, R>(select, initialValue,
           instanceName: instanceName, preserveState: preserveState);
+
+  /// registers a [handler] for a `ValueListenable` exactly once on the first build
+  /// and unregisters is when the widget is destroyed.
+  /// [select] allows you to register the handler to a member of the of the Object
+  /// stored in GetIt. If the object itself if the `ValueListenable` pass `(x)=>x` here
+  /// If you set [executeImmediately] to `true` the handler will be called immediately
+  /// with the current value of the `ValueListenable`.
+  /// All handler get passed in a [cancel] function that allows to kill the registration
+  /// from inside the handler.
+  void registerValueListenableHandler<T, R>(
+    ValueListenable<R> Function(T) select,
+    void Function(R newValue, void Function() cancel) handler, {
+    bool executeImmediately = false,
+    String instanceName,
+  }) =>
+      widget._state.value.registerValueListenableHandler<T, R>(select, handler,
+          instanceName: instanceName, executeImmediately: executeImmediately);
+
+  /// registers a [handler] for a `Stream` exactly once on the first build
+  /// and unregisters is when the widget is destroyed.
+  /// [select] allows you to register the handler to a member of the of the Object
+  /// stored in GetIt. If the object itself if the `ValueListenable` pass `(x)=>x` here
+  /// If you pass [initialValue] your passed handler will be executes immediately
+  /// with that value
+  /// As Streams can emit an error, you can register an optional [errorHandler]
+  /// All handler get passed in a [cancel] function that allows to kill the registration
+  /// from inside the handler.
+  void registerStreamHandler<T, R>(
+    Stream<R> Function(T) select,
+    void Function(R newValue, void Function() cancel) handler, {
+    void Function(Object error, void Function() cancel) errorHandler,
+    R initialValue,
+    String instanceName,
+  }) =>
+      widget._state.value.registerStreamHandler<T, R>(select, handler,
+          errorHandler: errorHandler,
+          initialValue: initialValue,
+          instanceName: instanceName);
 
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
   /// objects that should only exist as long as this scope exists.
@@ -325,10 +414,9 @@ mixin GetItStateMixin<T extends StatefulWidget> on State<T> {
   /// I would recommend doing pushing and popping from your business layer but sometimes
   /// this might come in handy
   void pushScope({void Function(GetIt getIt) init, void Function() dispose}) =>
-      _state.value.pushScope(init: init, dispose: dispose);
+      widget._state.value.pushScope(init: init, dispose: dispose);
 }
 
-/// will cancel the previous subscription and subscribe to the new stream.
 mixin _GetItElement on ComponentElement {
   _MixinState _state;
 
@@ -414,6 +502,7 @@ class _MixinState {
   }
 
   void resetCurrentWatch() {
+    print('resetCurrentWatch');
     currentWatch = _watchList.isNotEmpty ? _watchList.first : null;
   }
 
@@ -446,6 +535,7 @@ class _MixinState {
     final listenable = GetIt.I<T>(instanceName: instanceName);
     final watch = _getWatch<T>();
 
+    print(watch);
     if (watch == null) {
       final handler = () => _element.markNeedsBuild();
       _appendWatch(_WatchEntry<Listenable, Listenable>(
@@ -770,12 +860,14 @@ class _MixinState {
   }
 
   void clearRegistratons() {
+    print('clearRegistration');
     _watchList.forEach((x) => x.dispose());
     _watchList.clear();
     currentWatch = null;
   }
 
   void dispose() {
+    print('dispose');
     clearRegistratons();
     if (_scopeWasPushed) {
       GetIt.I.popScope();

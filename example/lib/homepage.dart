@@ -5,7 +5,7 @@ import 'package:get_it_mixin/get_it_mixin.dart';
 
 import 'listview.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends StatefulWidget with GetItStatefulWidgetMixin {
   @override
   _HomePageState createState() => _HomePageState();
 }
