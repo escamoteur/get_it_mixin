@@ -5,7 +5,7 @@ GetIt` really easy.
 
 >When I write of binding, I mean a mechanism that will automatically rebuild a widget that if data it depends on changes 
 
-Several users asked for support of data binding for GetIt like `provider` offers. At the same time I have to admit I got really intrigued by `flutter_hooks` from [Remi Rousselet](https://github.com/rrousselGit/), so I started to think about how to create something similar for `GetIt`. ** I'm very thankful for Remi's work. I took more than one inspiration from his code**
+Several users asked for support of data binding for GetIt like `provider` offers. At the same time I have to admit I got really intrigued by `flutter_hooks` from [Remi Rousselet](https://github.com/rrousselGit/), so I started to think about how to create something similar for `GetIt`. **I'm very thankful for Remi's work. I took more than one inspiration from his code**
 
 As I want to keep `GetIt` free of Flutter dependencies I choose to write a separate package with mixins to achive this goal.
 
@@ -64,10 +64,10 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
 
 As you can see `get()` is used exactly like using `GetIt` directly with all its parameters. `getX()` does the same but offers a selector function that has to return the final value from the referenced object. Most of the time you probably will only use `get()`, but the selector function can be used to do any data processing that might me needed before you can use the value.
 
-** get() and getX() can be called multiple times inside a Widget and also outside the `build()` function.**
+**get() and getX() can be called multiple times inside a Widget and also outside the `build()` function.**
 
 ### Watching Data
-The following functions will return a value and rebuild the widget every-time this data inside GetIt changes. ** Important: This function can only be called inside the `build()` function and you can only watch any objects only once. Also all of these function have to be called always and in the same order on every `build` meaning they can't be called conditionally otherwise the mixin gets confused**
+The following functions will return a value and rebuild the widget every-time this data inside GetIt changes. **Important: This function can only be called inside the `build()` function and you can only watch any objects only once. Also all of these function have to be called always and in the same order on every `build` meaning they can't be called conditionally otherwise the mixin gets confused**
 
 Imagine you have an object inside `GetIt` registered that implements `ValueListenableBuilder<String>` named `currentUserName` and we want the above widget to rebuild every-time it's value changes.
 We could do this adding a `ValueListenableBuilder`:
