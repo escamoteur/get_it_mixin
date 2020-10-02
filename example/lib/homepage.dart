@@ -23,7 +23,7 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
       showDialog(
           context: context,
           builder: (context) => AlertDialog(
-                title: const Text('An error has occured!'),
+                title: const Text('An error has occurred!'),
                 content: Text(error.toString()),
               ));
     });
