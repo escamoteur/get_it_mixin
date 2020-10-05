@@ -127,7 +127,8 @@ mixin GetItMixin on StatelessWidget {
   /// from inside the handler.
   void registerValueListenableHandler<T, R>(
     ValueListenable<R> Function(T) select,
-    void Function(R newValue, void Function() cancel) handler, {
+    void Function(BuildContext context, R newValue, void Function() cancel)
+        handler, {
     bool executeImmediately = false,
     String instanceName,
   }) =>
@@ -137,23 +138,41 @@ mixin GetItMixin on StatelessWidget {
   /// registers a [handler] for a `Stream` exactly once on the first build
   /// and unregisters is when the widget is destroyed.
   /// [select] allows you to register the handler to a member of the of the Object
-  /// stored in GetIt. If the object itself if the `ValueListenable` pass `(x)=>x` here
+  /// stored in GetIt. If the object itself if the `Stream` pass `(x)=>x` here
   /// If you pass [initialValue] your passed handler will be executes immediately
   /// with that value
-  /// As Streams can emit an error, you can register an optional [errorHandler]
   /// All handler get passed in a [cancel] function that allows to kill the registration
   /// from inside the handler.
   void registerStreamHandler<T, R>(
     Stream<R> Function(T) select,
-    void Function(R newValue, void Function() cancel) handler, {
-    void Function(Object error, void Function() cancel) errorHandler,
+    void Function(BuildContext context, AsyncSnapshot<R> newValue,
+            void Function() cancel)
+        handler, {
     R initialValue,
     String instanceName,
   }) =>
       _state.value.registerStreamHandler<T, R>(select, handler,
-          errorHandler: errorHandler,
-          initialValue: initialValue,
-          instanceName: instanceName);
+          initialValue: initialValue, instanceName: instanceName);
+
+  /// registers a [handler] for a `Future` exactly once on the first build
+  /// and unregisters is when the widget is destroyed.
+  /// This handler will only called once when the `Future` completes.
+  /// [select] allows you to register the handler to a member of the of the Object
+  /// stored in GetIt. If the object itself if the `Future` pass `(x)=>x` here
+  /// If you pass [initialValue] your passed handler will be executes immediately
+  /// with that value.
+  /// All handler get passed in a [cancel] function that allows to kill the registration
+  /// from inside the handler.
+  void registerFutureHandler<T, R>(
+    Future<R> Function(T) select,
+    void Function(BuildContext context, AsyncSnapshot<R> newValue,
+            void Function() cancel)
+        handler, {
+    R initialValue,
+    String instanceName,
+  }) =>
+      _state.value.registerFutureHandler<T, R>(select, handler,
+          initialValue: initialValue, instanceName: instanceName);
 
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
   /// objects that should only exist as long as this scope exists.
@@ -376,7 +395,8 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// from inside the handler.
   void registerValueListenableHandler<T, R>(
     ValueListenable<R> Function(T) select,
-    void Function(R newValue, void Function() cancel) handler, {
+    void Function(BuildContext context, R newValue, void Function() cancel)
+        handler, {
     bool executeImmediately = false,
     String instanceName,
   }) =>
@@ -394,15 +414,34 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// from inside the handler.
   void registerStreamHandler<T, R>(
     Stream<R> Function(T) select,
-    void Function(R newValue, void Function() cancel) handler, {
-    void Function(Object error, void Function() cancel) errorHandler,
+    void Function(BuildContext context, AsyncSnapshot<R> newValue,
+            void Function() cancel)
+        handler, {
     R initialValue,
     String instanceName,
   }) =>
       widget._state.value.registerStreamHandler<T, R>(select, handler,
-          errorHandler: errorHandler,
-          initialValue: initialValue,
-          instanceName: instanceName);
+          initialValue: initialValue, instanceName: instanceName);
+
+  /// registers a [handler] for a `Future` exactly once on the first build
+  /// and unregisters is when the widget is destroyed.
+  /// This handler will only called once when the `Future` completes.
+  /// [select] allows you to register the handler to a member of the of the Object
+  /// stored in GetIt. If the object itself if the `Future` pass `(x)=>x` here
+  /// If you pass [initialValue] your passed handler will be executes immediately
+  /// with that value.
+  /// All handler get passed in a [cancel] function that allows to kill the registration
+  /// from inside the handler.
+  void registerFutureHandler<T, R>(
+    Future<R> Function(T) select,
+    void Function(BuildContext context, AsyncSnapshot<R> newValue,
+            void Function() cancel)
+        handler, {
+    R initialValue,
+    String instanceName,
+  }) =>
+      _state.value.registerFutureHandler<T, R>(select, handler,
+          initialValue: initialValue, instanceName: instanceName);
 
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
   /// objects that should only exist as long as this scope exists.
@@ -768,7 +807,8 @@ class _MixinState {
 
   void registerValueListenableHandler<T, R>(
     ValueListenable<R> Function(T) select,
-    void Function(R newValue, void Function() dispose) handler, {
+    void Function(BuildContext contex, R newValue, void Function() dispose)
+        handler, {
     bool executeImmediately = false,
     String instanceName,
   }) {
@@ -801,20 +841,22 @@ class _MixinState {
       _appendWatch(watch, isHandler: true);
     }
 
-    final internalHandler = () => handler(listenable.value, watch.dispose);
+    final internalHandler =
+        () => handler(_element, listenable.value, watch.dispose);
     watch.notificationHandler = internalHandler;
     watch.observedObject = listenable;
 
     listenable.addListener(internalHandler);
     if (executeImmediately) {
-      handler(listenable.value, watch.dispose);
+      handler(_element, listenable.value, watch.dispose);
     }
   }
 
   void registerStreamHandler<T, R>(
     Stream<R> Function(T) select,
-    void Function(R newValue, void Function() cancel) handler, {
-    void Function(Object error, void Function() cancel) errorHandler,
+    void Function(BuildContext context, AsyncSnapshot<R> snapshot,
+            void Function() cancel)
+        handler, {
     R initialValue,
     String instanceName,
   }) {
@@ -843,10 +885,80 @@ class _MixinState {
     }
 
     watch.observedObject = stream;
-    watch.subscription =
-        stream.listen((x) => handler(x, watch.dispose), onError: errorHandler);
+    watch.subscription = stream.listen(
+      (x) => handler(_element,
+          AsyncSnapshot.withData(ConnectionState.active, x), watch.dispose),
+      onError: (error) => handler(
+          _element,
+          AsyncSnapshot.withError(ConnectionState.active, error),
+          watch.dispose),
+    );
     if (initialValue != null) {
-      handler(initialValue, watch.dispose);
+      handler(
+          _element,
+          AsyncSnapshot.withData(ConnectionState.waiting, initialValue),
+          watch.dispose);
+    }
+  }
+
+  void registerFutureHandler<T, R>(
+    Future<R> Function(T) select,
+    void Function(BuildContext context, AsyncSnapshot<R> snapshot,
+            void Function() cancel)
+        handler, {
+    R initialValue,
+    Future<R> future,
+    String instanceName,
+  }) {
+    assert(
+        select != null || future != null,
+        'select can\'t be null if you use registerFutureHandler '
+        'if you want target directly pass (x)=>x');
+    final parentObject = GetIt.I<T>(instanceName: instanceName);
+    final _future = future ?? select(parentObject);
+    assert(_future != null, 'select returned null in registerFutureHandler');
+
+    _WatchEntry watch = _getWatch();
+
+    if (watch != null) {
+      if (_future == watch.observedObject) {
+        return;
+      } else {
+        /// select returned a different value than the last time
+        /// so we have to unregister out handler and subscribe anew
+        watch.dispose();
+      }
+    } else {
+      watch = _WatchEntry<Future<R>, Object>(
+          observedObject: _future, dispose: (x) => x.observedObject = null);
+      _appendWatch(watch, isHandler: true);
+    }
+
+    watch.observedObject = _future;
+    _future.then(
+      (x) {
+        if (watch.observedObject != null) {
+          print('Future completed $x');
+          // only update if Future is still valid
+          handler(_element, AsyncSnapshot.withData(ConnectionState.active, x),
+              watch.dispose);
+        }
+      },
+      onError: (error) {
+        if (watch.observedObject != null) {
+          print('Future error');
+          handler(
+              _element,
+              AsyncSnapshot.withError(ConnectionState.active, error),
+              watch.dispose);
+        }
+      },
+    );
+    if (initialValue != null) {
+      handler(
+          _element,
+          AsyncSnapshot.withData(ConnectionState.waiting, initialValue),
+          watch.dispose);
     }
   }
 

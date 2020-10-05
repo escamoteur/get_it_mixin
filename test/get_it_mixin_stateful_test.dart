@@ -63,13 +63,13 @@ class _TestStateFullWidgetState extends State<TestStateFullWidget>
         watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
     final streamResult = watchStream((Model x) => x.stream, 'streamResult');
     final futureResult = watchFuture((Model x) => x.future, 'futureResult');
-    registerStreamHandler((Model x) => x.stream, (x, cancel) {
-      streamHandlerResult = x;
-      if (x == 'Cancel') {
+    registerStreamHandler((Model x) => x.stream, (contex, x, cancel) {
+      streamHandlerResult = x.data;
+      if (streamHandlerResult == 'Cancel') {
         cancel();
       }
     });
-    registerValueListenableHandler((Model x) => x.name, (x, cancel) {
+    registerValueListenableHandler((Model x) => x.name, (contex, x, cancel) {
       listenableHandlerResult = x;
       if (x == 'Cancel') {
         cancel();

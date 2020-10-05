@@ -57,13 +57,19 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
         watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
     final streamResult = watchStream((Model x) => x.stream, 'streamResult');
     final futureResult = watchFuture((Model x) => x.future, 'futureResult');
-    registerStreamHandler((Model x) => x.stream, (x, cancel) {
-      streamHandlerResult = x;
-      if (x == 'Cancel') {
+    registerStreamHandler((Model x) => x.stream, (context, x, cancel) {
+      streamHandlerResult = x.data;
+      if (streamHandlerResult == 'Cancel') {
         cancel();
       }
     });
-    registerValueListenableHandler((Model x) => x.name, (x, cancel) {
+    registerFutureHandler((Model x) => x.future, (context, x, cancel) {
+      futureHandlerResult = x.data;
+      if (streamHandlerResult == 'Cancel') {
+        cancel();
+      }
+    });
+    registerValueListenableHandler((Model x) => x.name, (context, x, cancel) {
       listenableHandlerResult = x;
       if (x == 'Cancel') {
         cancel();
@@ -111,6 +117,7 @@ Model theModel;
 ValueNotifier<String> valNotifier;
 int buildCount;
 String streamHandlerResult;
+String futureHandlerResult;
 String listenableHandlerResult;
 
 void main() {
@@ -447,10 +454,12 @@ void main() {
 
     theModel.name.value = '42';
     theModel.streamController.sink.add('4711');
+    theModel.completer.complete('66');
     await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
 
     expect(streamHandlerResult, '4711');
     expect(listenableHandlerResult, '42');
+    expect(futureHandlerResult, '66');
 
     theModel.name.value = 'Cancel';
     theModel.streamController.sink.add('Cancel');

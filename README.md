@@ -187,7 +187,7 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
 
     return Column(
       children: [
-        if (ready != true || !currentUser.hasData) // in case of an error it could be null
+        if (ready != true || !currentUser.hasData) // in case of an error ready could be null
          CircularProgressIndicator()
          else
         Text(currentUser.data),
