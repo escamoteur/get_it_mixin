@@ -114,8 +114,11 @@ mixin GetItMixin on StatelessWidget {
     String instanceName,
     bool preserveState = true,
   }) =>
-      _state.value.watchFuture<T, R>(select, initialValue,
-          instanceName: instanceName, preserveState: preserveState);
+      _state.value.registerFutureHandler<T, R>(select,
+          (context, x, cancel) => (context as Element).markNeedsBuild(), false,
+          initialValue: initialValue,
+          instanceName: instanceName,
+          preserveState: preserveState);
 
   /// registers a [handler] for a `ValueListenable` exactly once on the first build
   /// and unregisters is when the widget is destroyed.
@@ -171,8 +174,26 @@ mixin GetItMixin on StatelessWidget {
     R initialValue,
     String instanceName,
   }) =>
-      _state.value.registerFutureHandler<T, R>(select, handler,
+      _state.value.registerFutureHandler<T, R>(select, handler, true,
           initialValue: initialValue, instanceName: instanceName);
+
+  bool allReady(
+          {void Function(BuildContext context) onReady,
+          void Function(BuildContext context, Object error) onError,
+          Duration timeout}) =>
+      _state.value
+          .allReady(onReady: onReady, onError: onError, timeout: timeout);
+
+  bool isReady<T>(
+          {void Function(BuildContext context) onReady,
+          void Function(BuildContext context, Object error) onError,
+          Duration timeout,
+          String instanceName}) =>
+      _state.value.isReady(
+          instanceName: instanceName,
+          onReady: onReady,
+          onError: onError,
+          timeout: timeout);
 
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
   /// objects that should only exist as long as this scope exists.
@@ -255,35 +276,6 @@ class _StatefulMixInElement<W extends GetItStatefulWidgetMixin>
 
 mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// this is an ugly hack so that you don't get a warning in the statefulwidget
-  final _MutableWrapper<_MixinState> _state = _MutableWrapper<_MixinState>();
-  @override
-  void initState() {
-    print('initState');
-    _state.value = _MixinState();
-    super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    print('didChangeDependency');
-    _state.value.init(context);
-    super.didChangeDependencies();
-  }
-
-  @override
-  void didUpdateWidget(Widget newWidget) {
-    print('didUpdateWidget');
-    _state.value.clearRegistratons();
-    _state.value.resetCurrentWatch();
-    super.didUpdateWidget(newWidget);
-  }
-
-  @override
-  void dispose() {
-    _state.value.dispose();
-    super.dispose();
-  }
-
   /// all the following functions can be called inside the build function but also
   /// the mixin takes care that everything is correctly disposed.
 
@@ -382,8 +374,11 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
     String instanceName,
     bool preserveState = true,
   }) =>
-      widget._state.value.watchFuture<T, R>(select, initialValue,
-          instanceName: instanceName, preserveState: preserveState);
+      widget._state.value.registerFutureHandler<T, R>(select,
+          (context, x, cancel) => (context as Element).markNeedsBuild(), false,
+          initialValue: initialValue,
+          instanceName: instanceName,
+          preserveState: preserveState);
 
   /// registers a [handler] for a `ValueListenable` exactly once on the first build
   /// and unregisters is when the widget is destroyed.
@@ -440,7 +435,7 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
     R initialValue,
     String instanceName,
   }) =>
-      _state.value.registerFutureHandler<T, R>(select, handler,
+      widget._state.value.registerFutureHandler<T, R>(select, handler, true,
           initialValue: initialValue, instanceName: instanceName);
 
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
@@ -752,59 +747,6 @@ class _MixinState {
     return watch.lastValue;
   }
 
-  AsyncSnapshot<R> watchFuture<T, R>(
-      Future<R> Function(T) select, R initialValue,
-      {String instanceName, bool preserveState}) {
-    assert(select != null, 'select can\'t be null if you use watchStream');
-    final parentObject = GetIt.I<T>(instanceName: instanceName);
-    final future = select(parentObject);
-    assert(future != null, 'select returned null in watchX');
-
-    _WatchEntry watch = _getWatch();
-
-    if (watch != null) {
-      if (future == watch.observedObject) {
-        ///  still the same Future so we can directly return lastvalue
-        return watch.lastValue;
-      } else {
-        /// select returned a different value than the last time
-        /// so we have to unregister out handler and subscribe anew
-        watch.dispose();
-        initialValue =
-            preserveState ? watch.lastValue ?? initialValue : initialValue;
-      }
-    } else {
-      watch = _WatchEntry<Future<R>, AsyncSnapshot<R>>(
-          dispose: (x) => x.observedObject = null, observedObject: future);
-
-      _appendWatch(watch);
-    }
-
-    watch.observedObject = future;
-    future.then(
-      (x) {
-        if (watch.observedObject != null) {
-          print('Future completed $x');
-          // only update if Future is still valid
-          watch.lastValue = AsyncSnapshot.withData(ConnectionState.done, x);
-          _element.markNeedsBuild();
-        }
-      },
-      onError: (error) {
-        if (watch.observedObject != null) {
-          print('Future error');
-          watch.lastValue =
-              AsyncSnapshot.withError(ConnectionState.active, error);
-          _element.markNeedsBuild();
-        }
-      },
-    );
-    watch.lastValue =
-        AsyncSnapshot<R>.withData(ConnectionState.waiting, initialValue);
-
-    return watch.lastValue;
-  }
-
   void registerValueListenableHandler<T, R>(
     ValueListenable<R> Function(T) select,
     void Function(BuildContext contex, R newValue, void Function() dispose)
@@ -901,12 +843,23 @@ class _MixinState {
     }
   }
 
-  void registerFutureHandler<T, R>(
+  /// this function is used to implement several others
+  /// therefore not all parameters will be always used
+  /// [initialValue] is used by [watchFuture]
+  /// [preserveState] if select returns a different value than on the last
+  /// build this determines if for the new subscription [initialValue] or
+  /// the last received value should be used as initialValue
+  /// [executeImmediately] if the handler should be directly called.
+  /// [future] overrides a looked up future. Used to implement [whenAllReady]
+  AsyncSnapshot<R> registerFutureHandler<T, R>(
     Future<R> Function(T) select,
     void Function(BuildContext context, AsyncSnapshot<R> snapshot,
             void Function() cancel)
-        handler, {
+        handler,
+    bool isHandler, {
     R initialValue,
+    bool preserveState,
+    bool executeImmediately = false,
     Future<R> future,
     String instanceName,
   }) {
@@ -914,7 +867,8 @@ class _MixinState {
         select != null || future != null,
         'select can\'t be null if you use registerFutureHandler '
         'if you want target directly pass (x)=>x');
-    final parentObject = GetIt.I<T>(instanceName: instanceName);
+
+    final parentObject = future ?? GetIt.I<T>(instanceName: instanceName);
     final _future = future ?? select(parentObject);
     assert(_future != null, 'select returned null in registerFutureHandler');
 
@@ -922,16 +876,19 @@ class _MixinState {
 
     if (watch != null) {
       if (_future == watch.observedObject) {
-        return;
+        ///  still the same Future so we can directly return lastvalue
+        return watch.lastValue;
       } else {
         /// select returned a different value than the last time
         /// so we have to unregister out handler and subscribe anew
         watch.dispose();
+        initialValue =
+            preserveState ? watch.lastValue ?? initialValue : initialValue;
       }
     } else {
       watch = _WatchEntry<Future<R>, Object>(
           observedObject: _future, dispose: (x) => x.observedObject = null);
-      _appendWatch(watch, isHandler: true);
+      _appendWatch(watch, isHandler: isHandler);
     }
 
     watch.observedObject = _future;
@@ -940,26 +897,62 @@ class _MixinState {
         if (watch.observedObject != null) {
           print('Future completed $x');
           // only update if Future is still valid
-          handler(_element, AsyncSnapshot.withData(ConnectionState.active, x),
-              watch.dispose);
+          watch.lastValue = AsyncSnapshot.withData(ConnectionState.done, x);
+          handler(_element, watch.lastValue, watch.dispose);
         }
       },
       onError: (error) {
         if (watch.observedObject != null) {
           print('Future error');
-          handler(
-              _element,
-              AsyncSnapshot.withError(ConnectionState.active, error),
-              watch.dispose);
+          watch.lastValue =
+              AsyncSnapshot.withError(ConnectionState.done, error);
+          handler(_element, watch.lastValue, watch.dispose);
         }
       },
     );
-    if (initialValue != null) {
-      handler(
-          _element,
-          AsyncSnapshot.withData(ConnectionState.waiting, initialValue),
-          watch.dispose);
+
+    watch.lastValue =
+        AsyncSnapshot<R>.withData(ConnectionState.waiting, initialValue);
+    if (executeImmediately) {
+      handler(_element, watch.lastValue, watch.dispose);
     }
+
+    return watch.lastValue;
+  }
+
+  bool allReady(
+      {void Function(BuildContext context) onReady,
+      void Function(BuildContext context, Object error) onError,
+      Duration timeout}) {
+    return registerFutureHandler<void, bool>(null, (context, x, _) {
+      if (x.hasError) {
+        onError?.call(context, x.error);
+      } else {
+        onReady?.call(context);
+      }
+      (context as Element).markNeedsBuild();
+    }, true,
+        initialValue: false,
+        future: GetIt.I.allReady(timeout: timeout).then((_) => true)).data;
+  }
+
+  bool isReady<T>(
+      {void Function(BuildContext context) onReady,
+      void Function(BuildContext context, Object error) onError,
+      Duration timeout,
+      String instanceName}) {
+    return registerFutureHandler<void, bool>(null, (context, x, _) {
+      if (x.hasError) {
+        onError?.call(context, x.error);
+      } else {
+        onReady?.call(context);
+      }
+      (context as Element).markNeedsBuild();
+    }, true,
+        initialValue: GetIt.I.isReadySync<T>(instanceName: instanceName),
+        future: GetIt.I
+            .isReady<T>(instanceName: instanceName, timeout: timeout)
+            .then((_) => true)).data;
   }
 
   bool _scopeWasPushed = false;
