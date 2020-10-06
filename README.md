@@ -233,24 +233,30 @@ In the example above you see that the handler function has a third parameter tha
 If you already used the synchronization functions from GetIt you know both of this functions (otherwise check them out in the GetIt readme). The mixin variant returns the actual status as `bool` value and trigger a rebuild when this status changes. Additionally you can register handlers that are called when the status is `true`.
 
 ```Dart
-Widget build(BuildContext context) {
-  final isReady = allReady();
+class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
+  @override
+  Widget build(BuildContext context) {
+    final isReady = allReady();
 
-  if (isReady) {
-    return MyMainPageContent();
-  } else {
-    return CircularProgressIndicator();
-  }
+    if (isReady) {
+      return MyMainPageContent();
+    } else {
+      return CircularProgressIndicator();
+    }
+}
 ```
 or with the handler:
 
 ```Dart
-Widget build(BuildContext context) {
+class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
+  @override
+  Widget build(BuildContext context) {
   allReady(
       onReady: (context) =>
           Navigator.of(context).pushReplacement(MainPageRoute()));
 
   return CircularProgressIndicator();
+  }
 }
 ```
 `isReady<T>()` can be used in the same way to react on the status of a single asynchronous singleton.
