@@ -177,6 +177,11 @@ mixin GetItMixin on StatelessWidget {
       _state.value.registerFutureHandler<T, R>(select, handler, true,
           initialValue: initialValue, instanceName: instanceName);
 
+  /// returns `true` if all registered async or dependent objects are ready
+  /// and call [onReady] [onError] handlers when the all-ready state is reached
+  /// you can force a timeout Exceptions if [allReady] hasn't
+  /// return `true` within [timeout]
+  /// It will trigger a rebuild if this state changes
   bool allReady(
           {void Function(BuildContext context) onReady,
           void Function(BuildContext context, Object error) onError,
@@ -184,12 +189,18 @@ mixin GetItMixin on StatelessWidget {
       _state.value
           .allReady(onReady: onReady, onError: onError, timeout: timeout);
 
+  /// returns `true` if the registered async or dependent object defined by [T] and
+  /// [instanceName] is ready
+  /// and call [onReady] [onError] handlers when the ready state is reached
+  /// you can force a timeout Exceptions if [isReady] hasn't
+  /// return `true` within [timeout]
+  /// It will trigger a rebuild if this state changes
   bool isReady<T>(
           {void Function(BuildContext context) onReady,
           void Function(BuildContext context, Object error) onError,
           Duration timeout,
           String instanceName}) =>
-      _state.value.isReady(
+      _state.value.isReady<T>(
           instanceName: instanceName,
           onReady: onReady,
           onError: onError,
@@ -260,11 +271,6 @@ class _StatefulMixInElement<W extends GetItStatefulWidgetMixin>
   Widget build() {
     _state.resetCurrentWatch();
     return super.build();
-  }
-
-  @override
-  void reassemble() {
-    super.reassemble();
   }
 
   @override
@@ -438,6 +444,35 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
       widget._state.value.registerFutureHandler<T, R>(select, handler, true,
           initialValue: initialValue, instanceName: instanceName);
 
+  /// returns `true` if all registered async or dependent objects are ready
+  /// and call [onReady] [onError] handlers when the all-ready state is reached
+  /// you can force a timeout Exceptions if [allReady] hasn't
+  /// return `true` within [timeout]
+  /// It will trigger a rebuild if this state changes
+  bool allReady(
+          {void Function(BuildContext context) onReady,
+          void Function(BuildContext context, Object error) onError,
+          Duration timeout}) =>
+      widget._state.value
+          .allReady(onReady: onReady, onError: onError, timeout: timeout);
+
+  /// returns `true` if the registered async or dependent object defined by [T] and
+  /// [instanceName] is ready
+  /// and call [onReady] [onError] handlers when the ready state is reached
+  /// you can force a timeout Exceptions if [isReady] hasn't
+  /// return `true` within [timeout]
+  /// It will trigger a rebuild if this state changes
+  bool isReady<T>(
+          {void Function(BuildContext context) onReady,
+          void Function(BuildContext context, Object error) onError,
+          Duration timeout,
+          String instanceName}) =>
+      widget._state.value.isReady<T>(
+          instanceName: instanceName,
+          onReady: onReady,
+          onError: onError,
+          timeout: timeout);
+
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
   /// objects that should only exist as long as this scope exists.
   /// Can be called inside the `build` method method of a `StatelessWidget`.
@@ -536,7 +571,7 @@ class _MixinState {
   }
 
   void resetCurrentWatch() {
-    print('resetCurrentWatch');
+    // print('resetCurrentWatch');
     currentWatch = _watchList.isNotEmpty ? _watchList.first : null;
   }
 
@@ -569,7 +604,6 @@ class _MixinState {
     final listenable = GetIt.I<T>(instanceName: instanceName);
     final watch = _getWatch<T>();
 
-    print(watch);
     if (watch == null) {
       final handler = () => _element.markNeedsBuild();
       _appendWatch(_WatchEntry<Listenable, Listenable>(
@@ -858,7 +892,7 @@ class _MixinState {
         handler,
     bool isHandler, {
     R initialValue,
-    bool preserveState,
+    bool preserveState = true,
     bool executeImmediately = false,
     Future<R> future,
     String instanceName,
@@ -872,7 +906,7 @@ class _MixinState {
     final _future = future ?? select(parentObject);
     assert(_future != null, 'select returned null in registerFutureHandler');
 
-    _WatchEntry watch = _getWatch();
+    var watch = _getWatch() as _WatchEntry<Future<R>, AsyncSnapshot<R>>;
 
     if (watch != null) {
       if (_future == watch.observedObject) {
@@ -882,11 +916,12 @@ class _MixinState {
         /// select returned a different value than the last time
         /// so we have to unregister out handler and subscribe anew
         watch.dispose();
-        initialValue =
-            preserveState ? watch.lastValue ?? initialValue : initialValue;
+        initialValue = preserveState && watch.lastValue.hasData
+            ? watch.lastValue.data ?? initialValue
+            : initialValue;
       }
     } else {
-      watch = _WatchEntry<Future<R>, Object>(
+      watch = _WatchEntry<Future<R>, AsyncSnapshot<R>>(
           observedObject: _future, dispose: (x) => x.observedObject = null);
       _appendWatch(watch, isHandler: isHandler);
     }
@@ -895,7 +930,7 @@ class _MixinState {
     _future.then(
       (x) {
         if (watch.observedObject != null) {
-          print('Future completed $x');
+          // print('Future completed $x');
           // only update if Future is still valid
           watch.lastValue = AsyncSnapshot.withData(ConnectionState.done, x);
           handler(_element, watch.lastValue, watch.dispose);
@@ -903,7 +938,7 @@ class _MixinState {
       },
       onError: (error) {
         if (watch.observedObject != null) {
-          print('Future error');
+          // print('Future error');
           watch.lastValue =
               AsyncSnapshot.withError(ConnectionState.done, error);
           handler(_element, watch.lastValue, watch.dispose);
@@ -929,10 +964,10 @@ class _MixinState {
         onError?.call(context, x.error);
       } else {
         onReady?.call(context);
+        (context as Element).markNeedsBuild();
       }
-      (context as Element).markNeedsBuild();
     }, true,
-        initialValue: false,
+        initialValue: GetIt.I.allReadySync(),
         future: GetIt.I.allReady(timeout: timeout).then((_) => true)).data;
   }
 
@@ -965,14 +1000,14 @@ class _MixinState {
   }
 
   void clearRegistratons() {
-    print('clearRegistration');
+    // print('clearRegistration');
     _watchList.forEach((x) => x.dispose());
     _watchList.clear();
     currentWatch = null;
   }
 
   void dispose() {
-    print('dispose');
+    // print('dispose');
     clearRegistratons();
     if (_scopeWasPushed) {
       GetIt.I.popScope();

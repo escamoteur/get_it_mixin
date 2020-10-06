@@ -35,7 +35,8 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
   final bool watchXonlytwice;
   final bool watchStreamTwice;
   final bool watchFutureTwice;
-
+  final bool testIsReady;
+  final bool testAllReady;
   TestStateLessWidget(
       {Key key,
       this.watchTwice = false,
@@ -43,7 +44,9 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
       this.watchXtwice = false,
       this.watchXonlytwice = false,
       this.watchStreamTwice = false,
-      this.watchFutureTwice = false})
+      this.watchFutureTwice = false,
+      this.testIsReady = false,
+      this.testAllReady = false})
       : super(key: key);
 
   @override
@@ -75,6 +78,18 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
         cancel();
       }
     });
+    bool allReadyResult;
+    if (testAllReady) {
+      allReadyResult =
+          allReady(onReady: (context) => allReadyHandlerResult = 'Ready');
+    }
+    bool isReadyResult;
+
+    if (testIsReady) {
+      isReadyResult = isReady<Model>(
+          instanceName: 'isReadyTest',
+          onReady: (context) => isReadyHandlerResult = 'Ready');
+    }
     if (watchTwice) {
       final notifierVal = watch<ValueNotifier<String>, String>();
     }
@@ -106,6 +121,8 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
             Text(nestedCountry, key: Key('nestedCountry')),
             Text(streamResult.data, key: Key('streamResult')),
             Text(futureResult.data, key: Key('futureResult')),
+            Text(allReadyResult.toString(), key: Key('allReadyResult')),
+            Text(isReadyResult.toString(), key: Key('isReadyResult')),
           ],
         ),
       ),
@@ -119,12 +136,17 @@ int buildCount;
 String streamHandlerResult;
 String futureHandlerResult;
 String listenableHandlerResult;
-
+String allReadyHandlerResult;
+String isReadyHandlerResult;
 void main() {
   setUp(() async {
     buildCount = 0;
     streamHandlerResult = null;
     listenableHandlerResult = null;
+    streamHandlerResult = null;
+    futureHandlerResult = null;
+    allReadyHandlerResult = null;
+    isReadyHandlerResult = null;
     await GetIt.I.reset();
     valNotifier = ValueNotifier<String>('notifierVal');
     theModel = Model(
@@ -455,6 +477,7 @@ void main() {
     theModel.name.value = '42';
     theModel.streamController.sink.add('4711');
     theModel.completer.complete('66');
+
     await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
 
     expect(streamHandlerResult, '4711');
@@ -479,5 +502,103 @@ void main() {
     expect(theModel.name.hasListeners, false);
     expect(theModel.streamController.hasListener, false);
     expect(valNotifier.hasListeners, false);
+  });
+  testWidgets('allReady no async object', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      testAllReady: true,
+    ));
+    await tester.pump(Duration(milliseconds: 10));
+
+    final allReadyResult =
+        tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
+
+    expect(allReadyResult, 'true');
+    expect(allReadyHandlerResult, 'Ready');
+
+    expect(buildCount, 2);
+  });
+  testWidgets('allReady async object that is finished', (tester) async {
+    GetIt.I.registerSingletonAsync(
+        () => Future.delayed(Duration(milliseconds: 10), () => Model()),
+        instanceName: 'asyncObject');
+    await tester.pump(Duration(milliseconds: 120));
+    await tester.pumpWidget(TestStateLessWidget(
+      testAllReady: true,
+    ));
+    await tester.pump();
+
+    var allReadyResult =
+        tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
+
+    expect(allReadyResult, 'true');
+    expect(allReadyHandlerResult, 'Ready');
+
+    expect(buildCount, 2);
+  });
+  testWidgets('allReady async object that is not finished at the start',
+      (tester) async {
+    GetIt.I.registerSingletonAsync(
+        () => Future.delayed(Duration(milliseconds: 10), () => Model()),
+        instanceName: 'asyncObject');
+    await tester.pumpWidget(TestStateLessWidget(
+      testAllReady: true,
+    ));
+    await tester.pump();
+
+    var allReadyResult =
+        tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
+
+    expect(allReadyResult, 'false');
+    expect(allReadyHandlerResult, null);
+
+    await tester.pump(Duration(milliseconds: 120));
+    allReadyResult =
+        tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
+
+    expect(allReadyResult, 'true');
+    expect(allReadyHandlerResult, 'Ready');
+    expect(buildCount, 2);
+  });
+  testWidgets('isReady async object that is finished', (tester) async {
+    GetIt.I.registerSingletonAsync<Model>(
+        () => Future.delayed(Duration(milliseconds: 10), () => Model()),
+        instanceName: 'isReadyTest');
+    await tester.pump(Duration(milliseconds: 120));
+    await tester.pumpWidget(TestStateLessWidget(
+      testIsReady: true,
+    ));
+    await tester.pump();
+
+    var isReadyResult =
+        tester.widget<Text>(find.byKey(Key('isReadyResult'))).data;
+
+    expect(isReadyResult, 'true');
+    expect(isReadyHandlerResult, 'Ready');
+
+    expect(buildCount, 2);
+  });
+  testWidgets('isReady async object that is not finished at the start',
+      (tester) async {
+    GetIt.I.registerSingletonAsync(
+        () => Future.delayed(Duration(milliseconds: 10), () => Model()),
+        instanceName: 'isReadyTest');
+    await tester.pumpWidget(TestStateLessWidget(
+      testIsReady: true,
+    ));
+    await tester.pump();
+    await tester.pump();
+
+    var isReadyResult =
+        tester.widget<Text>(find.byKey(Key('isReadyResult'))).data;
+
+    expect(isReadyResult, 'false');
+    expect(isReadyHandlerResult, null);
+
+    await tester.pump(Duration(milliseconds: 120));
+    isReadyResult = tester.widget<Text>(find.byKey(Key('isReadyResult'))).data;
+
+    expect(isReadyResult, 'true');
+    expect(isReadyHandlerResult, 'Ready');
+    expect(buildCount, 2);
   });
 }

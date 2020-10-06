@@ -201,18 +201,22 @@ These functions can handle if the selector function returns different Streams an
 
 
 ### Event handlers
-Maybe you don't need a value updated but want to show a Snackbar as soon as a `Stream` emits a value or a `ValueListenable` updates a value. If you wanted to do this without this mix_in you would need a `StatefulWidget` where you subscribe to a `Stream` in `iniState` and dispose your subscription in the `dispose` function of the `State`.
+Maybe you don't need a value updated but want to show a Snackbar as soon as a `Stream` emits a value or a `ValueListenable` updates a value or a `Future`. If you wanted to do this without this mix_in you would need a `StatefulWidget` where you subscribe to a `Stream` in `iniState` and dispose your subscription in the `dispose` function of the `State`.
 
-With this mixin you can register handlers for `Streams` and `ValueListenables` and the mixin will dispose everything for you as soon as the widget gets destroyed.
+With this mixin you can register handlers for `Streams`, `ValueListenables` and Futures, and the mixin will dispose everything for you as soon as the widget gets destroyed.
 
 ```Dart
 class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
   @override
   Widget build(BuildContext context) {
-    registerStreamHandler((Model x) => x.userNameUpdates, (name,_) 
-        => showNameDialog(name));
-    registerValueListenableHandler((Model x) => x.name, (name,_) 
-        => showNameDialog(name));
+    registerStreamHandler((Model x) => x.userNameUpdates, (context,name,_) 
+        => showNameDialog(context,name));
+
+    registerValueListenableHandler((Model x) => x.name, (context,name,_) 
+        => showNameDialog(context,name));
+        
+    registerFutureHandler((Model x) => x.initializationReady, (context,__,_) 
+        => Navigator.of(contex).push(....));
     return Column(
       children: [
         //...whatever widgets needed 
@@ -221,10 +225,43 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
   }
 }
 ```
-
 For instance you could register a handler for `thrownExceptions` of a `flutter_command` while you use `watch()` to get the values.
 
-In the example above you see that the handler function has a second parameter that we ignored. Your handler gets a dispose function passed there that a handler could use to kill a registration from within itself.
+In the example above you see that the handler function has a third parameter that we ignored. Your handler gets a dispose function passed there that a handler could use to kill a registration from within itself.
+
+### allReady() & isReady()
+If you already used the synchronization functions from GetIt you know both of this functions (otherwise check them out in the GetIt readme). The mixin variant returns the actual status as `bool` value and trigger a rebuild when this status changes. Additionally you can register handlers that are called when the status is `true`.
+
+```Dart
+Widget build(BuildContext context) {
+  final isReady = allReady();
+
+  if (isReady) {
+    return MyMainPageContent();
+  } else {
+    return CircularProgressIndicator();
+  }
+```
+or with the handler:
+
+```Dart
+Widget build(BuildContext context) {
+  allReady(
+      onReady: (context) =>
+          Navigator.of(context).pushReplacement(MainPageRoute()));
+
+  return CircularProgressIndicator();
+}
+```
+`isReady<T>()` can be used in the same way to react on the status of a single asynchronous singleton.
+
+### Pushing a new GetIt Scope
+With `pushScope()` you can push one scope that will be popped when the Widget/State is destroyed. 
+You can pass an `init` function that will be called immediately after the scope was pushed and an optional `dispose` function that is called directly before the scope is popped.
+
+```Dart
+  void pushScope({void Function(GetIt getIt) init, void Function() dispose});
+```
 
 ## StatefulWidgets
 All the functions above are available for `StatefulWidgets` too. However with this mixin the need for `StatefulWidgets` will drastically decline.
