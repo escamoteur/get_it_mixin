@@ -69,7 +69,7 @@ class _TestStateFullWidgetState extends State<TestStateFullWidget>
         cancel();
       }
     });
-    registerValueListenableHandler((Model x) => x.name, (contex, x, cancel) {
+    registerHandler((Model x) => x.name, (contex, x, cancel) {
       listenableHandlerResult = x;
       if (x == 'Cancel') {
         cancel();

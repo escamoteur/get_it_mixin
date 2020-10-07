@@ -128,6 +128,17 @@ mixin GetItMixin on StatelessWidget {
   /// with the current value of the `ValueListenable`.
   /// All handler get passed in a [cancel] function that allows to kill the registration
   /// from inside the handler.
+  void registerHandler<T, R>(
+    ValueListenable<R> Function(T) select,
+    void Function(BuildContext context, R newValue, void Function() cancel)
+        handler, {
+    bool executeImmediately = false,
+    String instanceName,
+  }) =>
+      _state.value.registerHandler<T, R>(select, handler,
+          instanceName: instanceName, executeImmediately: executeImmediately);
+
+  @Deprecated('renamed to registerHandler')
   void registerValueListenableHandler<T, R>(
     ValueListenable<R> Function(T) select,
     void Function(BuildContext context, R newValue, void Function() cancel)
@@ -135,7 +146,7 @@ mixin GetItMixin on StatelessWidget {
     bool executeImmediately = false,
     String instanceName,
   }) =>
-      _state.value.registerValueListenableHandler<T, R>(select, handler,
+      _state.value.registerHandler<T, R>(select, handler,
           instanceName: instanceName, executeImmediately: executeImmediately);
 
   /// registers a [handler] for a `Stream` exactly once on the first build
@@ -394,6 +405,17 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// with the current value of the `ValueListenable`.
   /// All handler get passed in a [cancel] function that allows to kill the registration
   /// from inside the handler.
+  void registerHandler<T, R>(
+    ValueListenable<R> Function(T) select,
+    void Function(BuildContext context, R newValue, void Function() cancel)
+        handler, {
+    bool executeImmediately = false,
+    String instanceName,
+  }) =>
+      widget._state.value.registerHandler<T, R>(select, handler,
+          instanceName: instanceName, executeImmediately: executeImmediately);
+
+  @Deprecated('renamed to registerHandler')
   void registerValueListenableHandler<T, R>(
     ValueListenable<R> Function(T) select,
     void Function(BuildContext context, R newValue, void Function() cancel)
@@ -401,7 +423,7 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
     bool executeImmediately = false,
     String instanceName,
   }) =>
-      widget._state.value.registerValueListenableHandler<T, R>(select, handler,
+      widget._state.value.registerHandler<T, R>(select, handler,
           instanceName: instanceName, executeImmediately: executeImmediately);
 
   /// registers a [handler] for a `Stream` exactly once on the first build
@@ -781,7 +803,7 @@ class _MixinState {
     return watch.lastValue;
   }
 
-  void registerValueListenableHandler<T, R>(
+  void registerHandler<T, R>(
     ValueListenable<R> Function(T) select,
     void Function(BuildContext contex, R newValue, void Function() dispose)
         handler, {
@@ -790,12 +812,11 @@ class _MixinState {
   }) {
     assert(
         select != null,
-        'select can\'t be null if you use registerValueListenableHandler '
+        'select can\'t be null if you use registerHandler '
         'if you want target directly pass (x)=>x');
     final parentObject = GetIt.I<T>(instanceName: instanceName);
     final listenable = select(parentObject);
-    assert(listenable != null,
-        'select returned null in registerValueListenableHandler');
+    assert(listenable != null, 'select returned null in registerHandler');
 
     _WatchEntry watch = _getWatch();
 

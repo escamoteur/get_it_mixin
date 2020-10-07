@@ -72,7 +72,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
         cancel();
       }
     });
-    registerValueListenableHandler((Model x) => x.name, (context, x, cancel) {
+    registerHandler((Model x) => x.name, (context, x, cancel) {
       listenableHandlerResult = x;
       if (x == 'Cancel') {
         cancel();

@@ -1,8 +1,11 @@
+## [1.1.0] - 07.10.2020
+
+* deprecated `registerValueListenableHandler` in favour of `registerHandler`
+
 ## [1.0.0] - 06.10.2020
 
 * some breaking changes of the handler function definitions
 * added support for `allReady` and isReady
-
 
 ## [0.9.0] - 02.10.2020
 

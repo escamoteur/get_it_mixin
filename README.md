@@ -209,12 +209,13 @@ With this mixin you can register handlers for `Streams`, `ValueListenables` and 
 class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
   @override
   Widget build(BuildContext context) {
+    /// Registers a handler for a valueListenable
+    registerHandler((Model x) => x.name, (context,name,_) 
+        => showNameDialog(context,name));
+        
     registerStreamHandler((Model x) => x.userNameUpdates, (context,name,_) 
         => showNameDialog(context,name));
 
-    registerValueListenableHandler((Model x) => x.name, (context,name,_) 
-        => showNameDialog(context,name));
-        
     registerFutureHandler((Model x) => x.initializationReady, (context,__,_) 
         => Navigator.of(contex).push(....));
     return Column(
