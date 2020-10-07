@@ -1,3 +1,7 @@
+## [1.2.0] - 07.10.2020
+
+* the previous implementation of `allReady()` would have called `GetIt.allReady` on every build which would return every time a new Future so that it did rebuild unpredictable 
+
 ## [1.1.0] - 07.10.2020
 
 * deprecated `registerValueListenableHandler` in favour of `registerHandler`

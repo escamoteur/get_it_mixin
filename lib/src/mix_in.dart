@@ -116,7 +116,7 @@ mixin GetItMixin on StatelessWidget {
   }) =>
       _state.value.registerFutureHandler<T, R>(select,
           (context, x, cancel) => (context as Element).markNeedsBuild(), false,
-          initialValue: initialValue,
+          initialValueProvider: () =>initialValue,
           instanceName: instanceName,
           preserveState: preserveState);
 
@@ -176,7 +176,9 @@ mixin GetItMixin on StatelessWidget {
   /// If you pass [initialValue] your passed handler will be executes immediately
   /// with that value.
   /// All handler get passed in a [cancel] function that allows to kill the registration
-  /// from inside the handler.
+  /// from inside the handler.  
+  /// /// if the Future has completed [handler] will be called every time until
+  /// the handler calls `cancel` or the widget is destroyed
   void registerFutureHandler<T, R>(
     Future<R> Function(T) select,
     void Function(BuildContext context, AsyncSnapshot<R> newValue,
@@ -186,7 +188,7 @@ mixin GetItMixin on StatelessWidget {
     String instanceName,
   }) =>
       _state.value.registerFutureHandler<T, R>(select, handler, true,
-          initialValue: initialValue, instanceName: instanceName);
+          initialValueProvider: ()=> initialValue, instanceName: instanceName);
 
   /// returns `true` if all registered async or dependent objects are ready
   /// and call [onReady] [onError] handlers when the all-ready state is reached
@@ -393,7 +395,7 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   }) =>
       widget._state.value.registerFutureHandler<T, R>(select,
           (context, x, cancel) => (context as Element).markNeedsBuild(), false,
-          initialValue: initialValue,
+          initialValueProvider: ()=>initialValue,
           instanceName: instanceName,
           preserveState: preserveState);
 
@@ -455,6 +457,8 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// with that value.
   /// All handler get passed in a [cancel] function that allows to kill the registration
   /// from inside the handler.
+  /// if the Future has completed [handler] will be called every time until
+  /// the handler calls `cancel` or the widget is destroyed
   void registerFutureHandler<T, R>(
     Future<R> Function(T) select,
     void Function(BuildContext context, AsyncSnapshot<R> newValue,
@@ -464,7 +468,7 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
     String instanceName,
   }) =>
       widget._state.value.registerFutureHandler<T, R>(select, handler, true,
-          initialValue: initialValue, instanceName: instanceName);
+          initialValueProvider: () =>initialValue, instanceName: instanceName);
 
   /// returns `true` if all registered async or dependent objects are ready
   /// and call [onReady] [onError] handlers when the all-ready state is reached
@@ -900,48 +904,69 @@ class _MixinState {
 
   /// this function is used to implement several others
   /// therefore not all parameters will be always used
-  /// [initialValue] is used by [watchFuture]
+  /// [initialValueProvider] can return an initial value that is returned
+  /// as long the Future has not completed
   /// [preserveState] if select returns a different value than on the last
-  /// build this determines if for the new subscription [initialValue] or
+  /// build this determines if for the new subscription [initialValueProvider()] or
   /// the last received value should be used as initialValue
   /// [executeImmediately] if the handler should be directly called.
-  /// [future] overrides a looked up future. Used to implement [whenAllReady]
+  /// if the Future has completed [handler] will be called every time until
+  /// the handler calls `cancel` or the widget is destroyed
+  /// [futureProvider] overrides a looked up future. Used to implement [allReady]
+  /// We use prover functions here so that [registerFutureHandler] ensure
+  /// that they are only called once.
   AsyncSnapshot<R> registerFutureHandler<T, R>(
     Future<R> Function(T) select,
     void Function(BuildContext context, AsyncSnapshot<R> snapshot,
             void Function() cancel)
         handler,
     bool isHandler, {
-    R initialValue,
+    R Function() initialValueProvider,
     bool preserveState = true,
     bool executeImmediately = false,
-    Future<R> future,
+    Future<R> Function() futureProvider,
     String instanceName,
   }) {
     assert(
-        select != null || future != null,
+        select != null || futureProvider != null,
         'select can\'t be null if you use registerFutureHandler '
         'if you want target directly pass (x)=>x');
 
-    final parentObject = future ?? GetIt.I<T>(instanceName: instanceName);
-    final _future = future ?? select(parentObject);
-    assert(_future != null, 'select returned null in registerFutureHandler');
-
     var watch = _getWatch() as _WatchEntry<Future<R>, AsyncSnapshot<R>>;
 
+    Future<R> _future;
+    if (futureProvider == null) {
+      /// so we use [select] to get our Future
+      final parentObject = GetIt.I<T>(instanceName: instanceName);
+      _future = select?.call(parentObject);
+      assert(_future != null, 'select returned null in registerFutureHandler');
+    }
+
+    R _initialValue;
     if (watch != null) {
-      if (_future == watch.observedObject) {
+      if (_future == watch.observedObject || futureProvider != null) {
         ///  still the same Future so we can directly return lastvalue
+        /// in case that we got a futureProvider we always keep the first
+        /// returned Future
+        /// and call the Handler again as the state hasn't changed
+        if (isHandler && watch.observedObject != null) {
+          handler(_element, watch.lastValue, watch.dispose);
+        }
+
         return watch.lastValue;
       } else {
         /// select returned a different value than the last time
         /// so we have to unregister out handler and subscribe anew
         watch.dispose();
-        initialValue = preserveState && watch.lastValue.hasData
-            ? watch.lastValue.data ?? initialValue
-            : initialValue;
+        _initialValue = preserveState && watch.lastValue.hasData
+            ? watch.lastValue.data ?? initialValueProvider?.call()
+            : initialValueProvider?.call;
       }
     } else {
+      _future ??= futureProvider();
+
+      /// In case futureProvider != null
+
       watch = _WatchEntry<Future<R>, AsyncSnapshot<R>>(
           observedObject: _future, dispose: (x) => x.observedObject = null);
       _appendWatch(watch, isHandler: isHandler);
@@ -967,8 +992,8 @@ class _MixinState {
       },
     );
 
-    watch.lastValue =
-        AsyncSnapshot<R>.withData(ConnectionState.waiting, initialValue);
+    watch.lastValue = AsyncSnapshot<R>.withData(
+        ConnectionState.waiting, _initialValue ?? initialValueProvider?.call());
     if (executeImmediately) {
       handler(_element, watch.lastValue, watch.dispose);
     }
@@ -980,16 +1005,25 @@ class _MixinState {
       {void Function(BuildContext context) onReady,
       void Function(BuildContext context, Object error) onError,
       Duration timeout}) {
-    return registerFutureHandler<void, bool>(null, (context, x, _) {
-      if (x.hasError) {
-        onError?.call(context, x.error);
-      } else {
-        onReady?.call(context);
-        (context as Element).markNeedsBuild();
-      }
-    }, true,
-        initialValue: GetIt.I.allReadySync(),
-        future: GetIt.I.allReady(timeout: timeout).then((_) => true)).data;
+    return registerFutureHandler<void, bool>(
+      null,
+      (context, x, dispose) {
+        if (x.hasError) {
+          onError?.call(context, x.error);
+        } else {
+          onReady?.call(context);
+          (context as Element).markNeedsBuild();
+        }
+        dispose();
+      },
+      true,
+      initialValueProvider: () => GetIt.I.allReadySync(),
+
+      /// as `GetIt.allReady` returns a Future<void> we convert it
+      /// to a bool because if this Future completes the meaning is true.
+      futureProvider: () =>
+          GetIt.I.allReady(timeout: timeout).then((_) => true),
+    ).data;
   }
 
   bool isReady<T>(
@@ -997,16 +1031,21 @@ class _MixinState {
       void Function(BuildContext context, Object error) onError,
       Duration timeout,
       String instanceName}) {
-    return registerFutureHandler<void, bool>(null, (context, x, _) {
+    return registerFutureHandler<void, bool>(null, (context, x, cancel) {
       if (x.hasError) {
         onError?.call(context, x.error);
       } else {
         onReady?.call(context);
       }
       (context as Element).markNeedsBuild();
+      cancel(); // we want exactly one call.
     }, true,
-        initialValue: GetIt.I.isReadySync<T>(instanceName: instanceName),
-        future: GetIt.I
+        initialValueProvider: () =>
+            GetIt.I.isReadySync<T>(instanceName: instanceName),
+
+        /// as `GetIt.allReady` returns a Future<void> we convert it
+        /// to a bool because if this Future completes the meaning is true.
+        futureProvider: () => GetIt.I
             .isReady<T>(instanceName: instanceName, timeout: timeout)
             .then((_) => true)).data;
   }
