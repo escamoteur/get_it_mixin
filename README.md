@@ -40,7 +40,7 @@ class Model extends ChangeNotifier {
 }
 ```
 
-No we will explore how to access the different properties by using the `get_it_mixin`
+Now we will explore how to access the different properties by using the `get_it_mixin`
 
 ### Reading Data
 
@@ -67,7 +67,7 @@ As you can see `get()` is used exactly like using `GetIt` directly with all its 
 **get() and getX() can be called multiple times inside a Widget and also outside the `build()` function.**
 
 ### Watching Data
-The following functions will return a value and rebuild the widget every-time this data inside GetIt changes. **Important: This function can only be called inside the `build()` function and you can only watch any objects only once. Also all of these function have to be called always and in the same order on every `build` meaning they can't be called conditionally otherwise the mixin gets confused**
+The following functions will return a value and rebuild the widget every-time this data inside GetIt changes. **Important: This function can only be called inside the `build()` function and you can only watch any objects only once. The functions must be called on every `build`, in the same order, and cannot be called conditionally otherwise the mixin gets confused**
 
 Imagine you have an object inside `GetIt` registered that implements `ValueListenableBuilder<String>` named `currentUserName` and we want the above widget to rebuild every-time it's value changes.
 We could do this adding a `ValueListenableBuilder`:
@@ -80,7 +80,7 @@ class TestStateLessWidget1 extends StatelessWidget {
     return Column(
       children: [
         ValueListenableBuilder<String>(
-          valueListenable: GetIt.I<ValueListenable<String>>(instanceName: 'currentUser'),
+          valueListenable: GetIt.I<ValueListenable<String>>(instanceName: 'currentUserName'),
           builder: (context, val,_) {
             return Text(val);
           }
@@ -98,7 +98,7 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
   @override
   Widget build(BuildContext context) {
     final currentUser = 
-       watch<ValueListenable<String>, String>(instanceName: 'currentUser');
+       watch<ValueListenable<String>, String>(instanceName: 'currentUserName');
 
     return Column(
       children: [
@@ -119,7 +119,7 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
   @override
   Widget build(BuildContext context) {
     final name = watchX((Model x) => x.name);
-    /// if the valueListenable is nested deeper in you object
+    /// if the valueListenable is nested deeper in your object
     final innerName = watchX((Model x) => x.nestedModel.name);
 
     return Column(
@@ -175,7 +175,7 @@ final model = watchOnly((Model x) => x);
 ```
 
 #### Streams and Futures
-In case you want to update your widget as soon as a Stream in your Model emits a new value or as soon as a `Future` completes you can use `watchStream` and `watchFuture`. The nice thing is that you don't have to care to cancel subscriptions, he mixin takes care of that. So instead of using a `StreamBuilder` you can just do:
+In case you want to update your widget as soon as a Stream in your Model emits a new value or as soon as a `Future` completes you can use `watchStream` and `watchFuture`. The nice thing is that you don't have to care to cancel subscriptions, the mixin takes care of that. So instead of using a `StreamBuilder` you can just do:
 
 ```Dart
 class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
