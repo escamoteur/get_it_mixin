@@ -1,3 +1,7 @@
+## [1.3.0] - 14.10.2020
+
+* Bug fix for Hot reload and added a warning in the readme
+
 ## [1.2.0] - 07.10.2020
 
 * the previous implementation of `allReady()` would have called `GetIt.allReady` on every build which would return every time a new Future so that it did rebuild unpredictable 

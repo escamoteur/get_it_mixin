@@ -429,8 +429,9 @@ void main() {
   });
   testWidgets('change multiple data', (tester) async {
     await tester.pumpWidget(TestStateLessWidget());
+
+    theModel.country = 'Lummerland';
     theModel.name.value = '42';
-    theModel._country = 'Lummerland';
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;

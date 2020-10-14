@@ -116,7 +116,7 @@ mixin GetItMixin on StatelessWidget {
   }) =>
       _state.value.registerFutureHandler<T, R>(select,
           (context, x, cancel) => (context as Element).markNeedsBuild(), false,
-          initialValueProvider: () =>initialValue,
+          initialValueProvider: () => initialValue,
           instanceName: instanceName,
           preserveState: preserveState);
 
@@ -176,7 +176,7 @@ mixin GetItMixin on StatelessWidget {
   /// If you pass [initialValue] your passed handler will be executes immediately
   /// with that value.
   /// All handler get passed in a [cancel] function that allows to kill the registration
-  /// from inside the handler.  
+  /// from inside the handler.
   /// /// if the Future has completed [handler] will be called every time until
   /// the handler calls `cancel` or the widget is destroyed
   void registerFutureHandler<T, R>(
@@ -188,7 +188,7 @@ mixin GetItMixin on StatelessWidget {
     String instanceName,
   }) =>
       _state.value.registerFutureHandler<T, R>(select, handler, true,
-          initialValueProvider: ()=> initialValue, instanceName: instanceName);
+          initialValueProvider: () => initialValue, instanceName: instanceName);
 
   /// returns `true` if all registered async or dependent objects are ready
   /// and call [onReady] [onError] handlers when the all-ready state is reached
@@ -245,6 +245,7 @@ class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement
 
   @override
   void update(W newWidget) {
+    //print('update stateless element');
     newWidget._state.value = _state;
     super.update(newWidget);
   }
@@ -270,26 +271,9 @@ class _StatefulMixInElement<W extends GetItStatefulWidgetMixin>
 
   @override
   void update(W newWidget) {
+    //print('update statefull element');
     newWidget._state.value = _state;
     super.update(newWidget);
-  }
-
-  @override
-  void mount(Element parent, newSlot) {
-    _state.init(this);
-    super.mount(parent, newSlot);
-  }
-
-  @override
-  Widget build() {
-    _state.resetCurrentWatch();
-    return super.build();
-  }
-
-  @override
-  void unmount() {
-    _state.dispose();
-    super.unmount();
   }
 }
 
@@ -395,7 +379,7 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   }) =>
       widget._state.value.registerFutureHandler<T, R>(select,
           (context, x, cancel) => (context as Element).markNeedsBuild(), false,
-          initialValueProvider: ()=>initialValue,
+          initialValueProvider: () => initialValue,
           instanceName: instanceName,
           preserveState: preserveState);
 
@@ -468,7 +452,7 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
     String instanceName,
   }) =>
       widget._state.value.registerFutureHandler<T, R>(select, handler, true,
-          initialValueProvider: () =>initialValue, instanceName: instanceName);
+          initialValueProvider: () => initialValue, instanceName: instanceName);
 
   /// returns `true` if all registered async or dependent objects are ready
   /// and call [onReady] [onError] handlers when the all-ready state is reached
@@ -523,20 +507,18 @@ mixin _GetItElement on ComponentElement {
 
   @override
   Widget build() {
+    //print('build');
     _state.resetCurrentWatch();
     return super.build();
   }
 
   @override
   void update(Widget newWidget) {
-    super.update(newWidget);
+//    print('update');
     _state.clearRegistratons();
+    super.update(newWidget);
   }
 
-  @override
-  void reassemble() {
-    super.reassemble();
-  }
 
   @override
   void unmount() {
