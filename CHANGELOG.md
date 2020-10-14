@@ -1,4 +1,4 @@
-## [1.3.0] - 14.10.2020
+## [1.4.0] - 14.10.2020
 
 * Bug fix for Hot reload and added a warning in the readme
 
