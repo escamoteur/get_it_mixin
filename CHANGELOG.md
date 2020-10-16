@@ -1,3 +1,7 @@
+## [1.5.0] - 16.10.2020
+
+* Refactoring and corrected cancelation of futures
+
 ## [1.4.0] - 14.10.2020
 
 * Bug fix for Hot reload and added a warning in the readme
