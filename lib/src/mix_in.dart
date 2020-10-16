@@ -519,7 +519,6 @@ mixin _GetItElement on ComponentElement {
     super.update(newWidget);
   }
 
-
   @override
   void unmount() {
     _state.dispose();
@@ -535,6 +534,8 @@ class _WatchEntry<TObservedObject, TValue>
   TValue Function(TObservedObject) selector;
   void Function(_WatchEntry entry) _dispose;
   TValue lastValue;
+
+  Object activeCallbackIdentity;
   _WatchEntry(
       {this.notificationHandler,
       this.subscription,
@@ -945,19 +946,25 @@ class _MixinState {
             : initialValueProvider?.call;
       }
     } else {
+      /// In case futureProvider != null
       _future ??= futureProvider();
 
-      /// In case futureProvider != null
-
       watch = _WatchEntry<Future<R>, AsyncSnapshot<R>>(
-          observedObject: _future, dispose: (x) => x.observedObject = null);
+          observedObject: _future,
+          dispose: (x) => x.activeCallbackIdentity = null);
       _appendWatch(watch, isHandler: isHandler);
     }
 
+    /// in case of a new watch or an changing Future we do the following:
     watch.observedObject = _future;
+
+    /// by using a local variable we ensure that only the value and not the
+    /// variable is captured.
+    final callbackIdentity = Object();
+    watch.activeCallbackIdentity = callbackIdentity;
     _future.then(
       (x) {
-        if (watch.observedObject != null) {
+        if (watch.activeCallbackIdentity == callbackIdentity) {
           // print('Future completed $x');
           // only update if Future is still valid
           watch.lastValue = AsyncSnapshot.withData(ConnectionState.done, x);
@@ -965,7 +972,7 @@ class _MixinState {
         }
       },
       onError: (error) {
-        if (watch.observedObject != null) {
+        if (watch.activeCallbackIdentity == callbackIdentity) {
           // print('Future error');
           watch.lastValue =
               AsyncSnapshot.withError(ConnectionState.done, error);
