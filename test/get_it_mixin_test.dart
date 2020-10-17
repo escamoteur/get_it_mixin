@@ -15,13 +15,26 @@ class Model extends ChangeNotifier {
   }
 
   String get country => _country;
+  String _country2;
+  set country2(String val) {
+    _country2 = val;
+    notifyListeners();
+  }
+
+  String get country2 => _country2;
   final ValueNotifier<String> name;
   final Model nestedModel;
   final StreamController<String> streamController =
       StreamController<String>.broadcast();
 
-  Model({this.constantValue, String country, this.name, this.nestedModel})
-      : _country = country;
+  Model(
+      {this.constantValue,
+      String country,
+      this.name,
+      this.nestedModel,
+      String country2})
+      : _country = country,
+        _country2 = country2;
 
   Stream<String> get stream => streamController.stream;
   final Completer<String> completer = Completer<String>();
@@ -55,6 +68,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
     final onlyRead = get<Model>().constantValue;
     final notifierVal = watch<ValueNotifier<String>, String>();
     final country = watchOnly((Model x) => x.country);
+    final country2 = watchOnly((Model x) => x.country2);
     final name = watchX((Model x) => x.name);
     final nestedCountry =
         watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
@@ -117,6 +131,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
             Text(onlyRead, key: Key('onlyRead')),
             Text(notifierVal, key: Key('notifierVal')),
             Text(country, key: Key('country')),
+            Text(country2, key: Key('country2')),
             Text(name, key: Key('name')),
             Text(nestedCountry, key: Key('nestedCountry')),
             Text(streamResult.data, key: Key('streamResult')),
@@ -138,6 +153,7 @@ String futureHandlerResult;
 String listenableHandlerResult;
 String allReadyHandlerResult;
 String isReadyHandlerResult;
+
 void main() {
   setUp(() async {
     buildCount = 0;
@@ -152,6 +168,9 @@ void main() {
     theModel = Model(
         constantValue: 'onlyRead',
         country: 'country',
+        country2: 'country',
+
+        /// check if watchonly can differentiate between the two countiy fields
         name: ValueNotifier('name'),
         nestedModel: Model(country: 'nestedCountry'));
     GetIt.I.registerSingleton<Model>(theModel);
@@ -166,6 +185,7 @@ void main() {
     final notifierVal =
         tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
     final country = tester.widget<Text>(find.byKey(Key('country'))).data;
+    final country2 = tester.widget<Text>(find.byKey(Key('country2'))).data;
     final name = tester.widget<Text>(find.byKey(Key('name'))).data;
     final nestedCountry =
         tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
@@ -177,6 +197,7 @@ void main() {
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
     expect(country, 'country');
+    expect(country2, 'country');
     expect(name, 'name');
     expect(nestedCountry, 'nestedCountry');
     expect(streamResult, 'streamResult');
@@ -184,7 +205,7 @@ void main() {
     expect(buildCount, 1);
   });
 
-  testWidgets('wathTwice', (tester) async {
+  testWidgets('watchTwice', (tester) async {
     await tester.pumpWidget(TestStateLessWidget(
       watchTwice: true,
     ));
@@ -193,7 +214,7 @@ void main() {
     expect(tester.takeException(), isA<ArgumentError>());
   });
 
-  testWidgets('wathXtwice', (tester) async {
+  testWidgets('watchXtwice', (tester) async {
     await tester.pumpWidget(TestStateLessWidget(
       watchXtwice: true,
     ));
@@ -202,23 +223,25 @@ void main() {
     expect(tester.takeException(), isA<ArgumentError>());
   });
 
-  testWidgets('watchOnlyTwice', (tester) async {
-    await tester.pumpWidget(TestStateLessWidget(
-      watchOnlyTwice: true,
-    ));
-    await tester.pump();
+// Unfortunately we can't check if two selectors point to the same
+// object.
+  // testWidgets('watchOnlyTwice', (tester) async {
+  //   await tester.pumpWidget(TestStateLessWidget(
+  //     watchOnlyTwice: true,
+  //   ));
+  //   await tester.pump();
 
-    expect(tester.takeException(), isA<ArgumentError>());
-  });
+  //   expect(tester.takeException(), isA<ArgumentError>());
+  // });
 
-  testWidgets('watchXOnlyTwice', (tester) async {
-    await tester.pumpWidget(TestStateLessWidget(
-      watchXonlytwice: true,
-    ));
-    await tester.pump();
+  // testWidgets('watchXOnlyTwice', (tester) async {
+  //   await tester.pumpWidget(TestStateLessWidget(
+  //     watchXonlytwice: true,
+  //   ));
+  //   await tester.pump();
 
-    expect(tester.takeException(), isA<ArgumentError>());
-  });
+  //   expect(tester.takeException(), isA<ArgumentError>());
+  // });
 
   testWidgets('watchStream twice', (tester) async {
     await tester.pumpWidget(TestStateLessWidget(

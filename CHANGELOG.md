@@ -1,3 +1,8 @@
+## [1.5.1] - 17.10.2020
+
+* fixed bug that you couldn't use `watchOnly` and `watchXonly` more than once on the same `Listenable` object.
+* split source into several part files.
+
 ## [1.5.0] - 16.10.2020
 
 * Refactoring and corrected cancelation of futures

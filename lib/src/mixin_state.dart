@@ -33,7 +33,8 @@ class _WatchEntry<TObservedObject, TValue>
     if (entry.observedObject != null) {
       if (entry.observedObject == observedObject) {
         if (entry.hasSelector && hasSelector) {
-          return entry.getSelectedValue() == getSelectedValue();
+          return entry.getSelectedValue().hashCode ==
+              getSelectedValue().hashCode;
         }
         return true;
       }
@@ -187,7 +188,9 @@ class _MixinState {
           lastValue: onlyTarget,
           dispose: (x) =>
               x.observedObject.removeListener(x.notificationHandler));
-      _appendWatch(watch);
+      _appendWatch(watch, allowMultipleSubcribers: true);
+      // we have to set `allowMultipleSubcribers=true` because we can't differentiate
+      // one selector function from another.
     }
 
     final handler = () {
@@ -231,7 +234,9 @@ class _MixinState {
           selector: only,
           dispose: (x) =>
               x.observedObject.removeListener(x.notificationHandler));
-      _appendWatch(watch);
+      _appendWatch(watch, allowMultipleSubcribers: true);
+      // we have to set `allowMultipleSubcribers=true` because we can't differentiate
+      // one selector function from another.
     }
 
     final handler = () {
