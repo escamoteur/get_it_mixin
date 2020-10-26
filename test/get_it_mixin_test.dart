@@ -223,25 +223,23 @@ void main() {
     expect(tester.takeException(), isA<ArgumentError>());
   });
 
-// Unfortunately we can't check if two selectors point to the same
-// object.
-  // testWidgets('watchOnlyTwice', (tester) async {
-  //   await tester.pumpWidget(TestStateLessWidget(
-  //     watchOnlyTwice: true,
-  //   ));
-  //   await tester.pump();
+  testWidgets('watchOnlyTwice', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      watchOnlyTwice: true,
+    ));
+    await tester.pump();
 
-  //   expect(tester.takeException(), isA<ArgumentError>());
-  // });
+    expect(tester.takeException(), isA<ArgumentError>());
+  });
 
-  // testWidgets('watchXOnlyTwice', (tester) async {
-  //   await tester.pumpWidget(TestStateLessWidget(
-  //     watchXonlytwice: true,
-  //   ));
-  //   await tester.pump();
+  testWidgets('watchXOnlyTwice', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      watchXonlytwice: true,
+    ));
+    await tester.pump();
 
-  //   expect(tester.takeException(), isA<ArgumentError>());
-  // });
+    expect(tester.takeException(), isA<ArgumentError>());
+  });
 
   testWidgets('watchStream twice', (tester) async {
     await tester.pumpWidget(TestStateLessWidget(
