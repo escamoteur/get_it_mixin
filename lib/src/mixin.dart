@@ -9,12 +9,12 @@ part 'elements.dart';
 part 'mixin_state.dart';
 
 class _MutableWrapper<T> {
-  T value;
+  late T value;
 }
 
 mixin GetItMixin on StatelessWidget {
   /// this is an ugly hack so that you don't get a warning in the StatelessWidget
-  final _MutableWrapper<_MixinState/*!*/> _state = _MutableWrapper<_MixinState/*!*/>();
+  final _MutableWrapper<_MixinState> _state = _MutableWrapper<_MixinState>();
   @override
   StatelessElement createElement() => _StatelessMixInElement(this);
 
@@ -26,33 +26,33 @@ mixin GetItMixin on StatelessWidget {
   /// function used for this type or based on a name.
   /// for factories you can pass up to 2 parameters [param1,param2] they have to match the types
   /// given at registration with [registerFactoryParam()]
-  T/*!*/ get<T>({String instanceName, dynamic param1, dynamic param2}) =>
-      GetIt.I<T>(instanceName: instanceName, param1: param1, param2: param2);
+  T get<T extends Object>(
+          {String? instanceName, dynamic param1, dynamic param2}) =>
+      GetIt.I<T>(instanceName: instanceName!, param1: param1, param2: param2);
 
   /// like [get] but for async registrations
-  Future<T> getAsync<T>(
-          {String instanceName, dynamic param1, dynamic param2}) =>
+  Future<T> getAsync<T extends Object>(
+          {String? instanceName, dynamic param1, dynamic param2}) =>
       GetIt.I.getAsync<T>(
           instanceName: instanceName, param1: param1, param2: param2);
 
   /// like [get] but with an additional [select] function to return a member of [T]
-  R getX<T, R>(R Function(T/*!*/) accessor, {String instanceName}) {
-    assert(accessor != null);
-    return accessor(GetIt.I<T>(instanceName: instanceName));
+  R getX<T extends Object, R>(R Function(T) accessor, {String? instanceName}) {
+    return accessor(GetIt.I<T>(instanceName: instanceName!));
   }
 
   /// To observe `ValueListenables`
   /// like [get] but it also registers a listener to [T] and
   /// triggers a rebuild every time [T].value changes
-  R watch<T extends ValueListenable<R>, R>({String instanceName}) =>
+  R watch<T extends ValueListenable<R>, R>({String? instanceName}) =>
       _state.value.watch<T>(instanceName: instanceName).value;
 
   /// like watch but it only triggers a rebuild when the value of
   /// the `ValueListenable`, that the function [select] returns changes
   /// useful if the `ValueListenable` is a member of your business object [T]
-  R watchX<T, R>(
+  R watchX<T extends Object, R>(
     ValueListenable<R> Function(T) select, {
-    String instanceName,
+    String? instanceName,
   }) =>
       _state.value.watchX<T, R>(select, instanceName: instanceName);
 
@@ -62,16 +62,16 @@ mixin GetItMixin on StatelessWidget {
   /// of [T]
   R watchOnly<T extends Listenable, R>(
     R Function(T) only, {
-    String instanceName,
+    String? instanceName,
   }) =>
       _state.value.watchOnly<T, R>(only, instanceName: instanceName);
 
   /// a combination of [watchX] and [watchOnly] for simple
   /// `Listenable` members [Q] of your object [T]
-  R watchXOnly<T, Q extends Listenable, R>(
-    Q Function(T) select,
+  R watchXOnly<T extends Object, Q extends Listenable, R>(
+    Q? Function(T) select,
     R Function(Q listenable) only, {
-    String instanceName,
+    String? instanceName,
   }) =>
       _state.value
           .watchXOnly<T, Q, R>(select, only, instanceName: instanceName);
@@ -87,10 +87,10 @@ mixin GetItMixin on StatelessWidget {
   /// will cancel the previous subscription and subscribe to the new stream.
   /// [preserveState] determines then if the new initial value should be the last
   /// value of the previous stream or again [initialValue]
-  AsyncSnapshot<R> watchStream<T, R>(
+  AsyncSnapshot<R> watchStream<T extends Object, R>(
     Stream<R> Function(T) select,
     R initialValue, {
-    String instanceName,
+    String? instanceName,
     bool preserveState = true,
   }) =>
       _state.value.watchStream<T, R>(select, initialValue,
@@ -109,10 +109,10 @@ mixin GetItMixin on StatelessWidget {
   /// of the new Future.
   /// [preserveState] determines then if the new initial value should be the last
   /// value of the previous stream or again [initialValue]
-  AsyncSnapshot<R> watchFuture<T, R>(
+  AsyncSnapshot<R?> watchFuture<T extends Object, R>(
     Future<R> Function(T) select,
     R initialValue, {
-    String instanceName,
+    String? instanceName,
     bool preserveState = true,
   }) =>
       _state.value.registerFutureHandler<T, R>(
@@ -130,23 +130,23 @@ mixin GetItMixin on StatelessWidget {
   /// with the current value of the `ValueListenable`.
   /// All handler get passed in a [cancel] function that allows to kill the registration
   /// from inside the handler.
-  void registerHandler<T, R>(
+  void registerHandler<T extends Object, R>(
     ValueListenable<R> Function(T) select,
     void Function(BuildContext context, R newValue, void Function() cancel)
         handler, {
     bool executeImmediately = false,
-    String instanceName,
+    String? instanceName,
   }) =>
       _state.value.registerHandler<T, R>(select, handler,
           instanceName: instanceName, executeImmediately: executeImmediately);
 
   @Deprecated('renamed to registerHandler')
-  void registerValueListenableHandler<T, R>(
+  void registerValueListenableHandler<T extends Object, R>(
     ValueListenable<R> Function(T) select,
     void Function(BuildContext context, R newValue, void Function() cancel)
         handler, {
     bool executeImmediately = false,
-    String instanceName,
+    String? instanceName,
   }) =>
       _state.value.registerHandler<T, R>(select, handler,
           instanceName: instanceName, executeImmediately: executeImmediately);
@@ -159,13 +159,13 @@ mixin GetItMixin on StatelessWidget {
   /// with that value
   /// All handler get passed in a [cancel] function that allows to kill the registration
   /// from inside the handler.
-  void registerStreamHandler<T, R>(
+  void registerStreamHandler<T extends Object, R>(
     Stream<R> Function(T) select,
-    void Function(BuildContext context, AsyncSnapshot<R> newValue,
+    void Function(BuildContext? context, AsyncSnapshot<R> newValue,
             void Function() cancel)
         handler, {
-    R initialValue,
-    String instanceName,
+    R? initialValue,
+    String? instanceName,
   }) =>
       _state.value.registerStreamHandler<T, R>(select, handler,
           initialValue: initialValue, instanceName: instanceName);
@@ -181,16 +181,15 @@ mixin GetItMixin on StatelessWidget {
   /// from inside the handler.
   /// /// if the Future has completed [handler] will be called every time until
   /// the handler calls `cancel` or the widget is destroyed
-  void registerFutureHandler<T, R>(
+  void registerFutureHandler<T extends Object, R>(
     Future<R> Function(T) select,
-    void Function(BuildContext context, AsyncSnapshot<R> newValue,
+    void Function(BuildContext? context, AsyncSnapshot<R?>? newValue,
             void Function() cancel)
         handler, {
-    R initialValue,
-    String instanceName,
+    R? initialValue,
+    String? instanceName,
   }) {
-    assert(handler != null, "Handler can't be null for registerFutureHandler");
-    _state.value.registerFutureHandler<T, R>(select, handler,
+    _state.value.registerFutureHandler<T, R?>(select, handler,
         initialValueProvider: () => initialValue,
         instanceName: instanceName,
         allowMultipleSubscribers: true);
@@ -202,9 +201,9 @@ mixin GetItMixin on StatelessWidget {
   /// return `true` within [timeout]
   /// It will trigger a rebuild if this state changes
   bool allReady(
-          {void Function(BuildContext context) onReady,
-          void Function(BuildContext context, Object error) onError,
-          Duration timeout}) =>
+          {void Function(BuildContext? context)? onReady,
+          void Function(BuildContext? context, Object? error)? onError,
+          Duration? timeout}) =>
       _state.value
           .allReady(onReady: onReady, onError: onError, timeout: timeout);
 
@@ -214,11 +213,11 @@ mixin GetItMixin on StatelessWidget {
   /// you can force a timeout Exceptions if [isReady] hasn't
   /// return `true` within [timeout]
   /// It will trigger a rebuild if this state changes
-  bool isReady<T>(
-          {void Function(BuildContext context) onReady,
-          void Function(BuildContext context, Object error) onError,
-          Duration timeout,
-          String instanceName}) =>
+  bool isReady<T extends Object>(
+          {void Function(BuildContext? context)? onReady,
+          void Function(BuildContext? context, Object? error)? onError,
+          Duration? timeout,
+          String? instanceName}) =>
       _state.value.isReady<T>(
           instanceName: instanceName,
           onReady: onReady,
@@ -234,7 +233,8 @@ mixin GetItMixin on StatelessWidget {
   /// an async disposal function, that functions won't be awaited.
   /// I would recommend doing pushing and popping from your business layer but sometimes
   /// this might come in handy
-  void pushScope({void Function(GetIt getIt) init, void Function() dispose}) =>
+  void pushScope(
+          {void Function(GetIt getIt)? init, void Function()? dispose}) =>
       _state.value.pushScope(init: init, dispose: dispose);
 }
 
@@ -254,33 +254,33 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// function used for this type or based on a name.
   /// for factories you can pass up to 2 parameters [param1,param2] they have to match the types
   /// given at registration with [registerfactoryparam()]
-  T get<T>({String instanceName, dynamic param1, dynamic param2}) =>
-      GetIt.I<T>(instanceName: instanceName, param1: param1, param2: param2);
+  T get<T extends Object>(
+          {String? instanceName, dynamic param1, dynamic param2}) =>
+      GetIt.I<T>(instanceName: instanceName!, param1: param1, param2: param2);
 
   /// like [get] but for async registrations
-  Future<T> getasync<T>(
-          {String instanceName, dynamic param1, dynamic param2}) =>
+  Future<T> getAsync<T extends Object>(
+          {String? instanceName, dynamic param1, dynamic param2}) =>
       GetIt.I.getAsync<T>(
           instanceName: instanceName, param1: param1, param2: param2);
 
   /// like [get] but with an additional [select] function to return a member of [T]
-  R getx<T, R>(R Function(T) accessor, {String instanceName}) {
-    assert(accessor != null);
-    return accessor(GetIt.I<T>(instanceName: instanceName));
+  R getX<T extends Object, R>(R Function(T?) accessor, {String? instanceName}) {
+    return accessor(GetIt.I<T>(instanceName: instanceName!));
   }
 
   /// To observe `ValueListenables`
   /// like [get] but it also registers a listener to [T] and
   /// triggers a rebuild every time [T].value changes
-  R watch<T extends ValueListenable<R>, R>({String instanceName}) =>
+  R watch<T extends ValueListenable<R>, R>({String? instanceName}) =>
       widget._state.value.watch<T>(instanceName: instanceName).value;
 
   /// like watch but it only triggers a rebuild when the value of
   /// the `ValueListenable`, that the function [select] returns changes
   /// useful if the `ValueListenable` is a member of your business object [T]
-  R watchX<T, R>(
+  R watchX<T extends Object, R>(
     ValueListenable<R> Function(T) select, {
-    String instanceName,
+    String? instanceName,
   }) =>
       widget._state.value.watchX<T, R>(select, instanceName: instanceName);
 
@@ -290,16 +290,16 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// of [T]
   R watchOnly<T extends Listenable, R>(
     R Function(T) only, {
-    String instanceName,
+    String? instanceName,
   }) =>
       widget._state.value.watchOnly<T, R>(only, instanceName: instanceName);
 
   /// a combination of [watchX] and [watchOnly] for simple
   /// `Listenable` members [Q] of your object [T]
-  R watchXOnly<T, Q extends Listenable, R>(
-    Q Function(T) select,
+  R watchXOnly<T extends Object, Q extends Listenable, R>(
+    Q? Function(T) select,
     R Function(Q listenable) only, {
-    String instanceName,
+    String? instanceName,
   }) =>
       widget._state.value
           .watchXOnly<T, Q, R>(select, only, instanceName: instanceName);
@@ -318,7 +318,7 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   AsyncSnapshot<R> watchStream<T, R>(
     Stream<R> Function(T) select,
     R initialValue, {
-    String instanceName,
+    String? instanceName,
     bool preserveState = true,
   }) =>
       widget._state.value.watchStream<T, R>(select, initialValue,
@@ -337,10 +337,10 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// of the new Future.
   /// [preserveState] determines then if the new initial value should be the last
   /// value of the previous stream or again [initialValue]
-  AsyncSnapshot<R> watchFuture<T, R>(
+  AsyncSnapshot<R?> watchFuture<T, R>(
     Future<R> Function(T) select,
     R initialValue, {
-    String instanceName,
+    String? instanceName,
     bool preserveState = true,
   }) =>
       widget._state.value.registerFutureHandler<T, R>(
@@ -358,23 +358,24 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// with the current value of the `ValueListenable`.
   /// All handler get passed in a [cancel] function that allows to kill the registration
   /// from inside the handler.
-  void registerHandler<T, R>(
-    ValueListenable<R> Function(T) select,
+  void registerHandler<T extends Object, R>(
+    ValueListenable<R>? Function(T) select,
     void Function(BuildContext context, R newValue, void Function() cancel)
         handler, {
     bool executeImmediately = false,
-    String instanceName,
+    String? instanceName,
   }) =>
-      widget._state.value.registerHandler<T, R>(select, handler,
+      widget._state.value.registerHandler<T, R>(
+          select as ValueListenable<R> Function(T), handler,
           instanceName: instanceName, executeImmediately: executeImmediately);
 
   @Deprecated('renamed to registerHandler')
-  void registerValueListenableHandler<T, R>(
+  void registerValueListenableHandler<T extends Object, R>(
     ValueListenable<R> Function(T) select,
     void Function(BuildContext context, R newValue, void Function() cancel)
         handler, {
     bool executeImmediately = false,
-    String instanceName,
+    String? instanceName,
   }) =>
       widget._state.value.registerHandler<T, R>(select, handler,
           instanceName: instanceName, executeImmediately: executeImmediately);
@@ -388,13 +389,13 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// As Streams can emit an error, you can register an optional [errorHandler]
   /// All handler get passed in a [cancel] function that allows to kill the registration
   /// from inside the handler.
-  void registerStreamHandler<T, R>(
+  void registerStreamHandler<T extends Object, R>(
     Stream<R> Function(T) select,
-    void Function(BuildContext context, AsyncSnapshot<R> newValue,
+    void Function(BuildContext? context, AsyncSnapshot<R> newValue,
             void Function() cancel)
         handler, {
-    R initialValue,
-    String instanceName,
+    R? initialValue,
+    String? instanceName,
   }) =>
       widget._state.value.registerStreamHandler<T, R>(select, handler,
           initialValue: initialValue, instanceName: instanceName);
@@ -412,13 +413,13 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// the handler calls `cancel` or the widget is destroyed
   void registerFutureHandler<T, R>(
     Future<R> Function(T) select,
-    void Function(BuildContext context, AsyncSnapshot<R> newValue,
+    void Function(BuildContext? context, AsyncSnapshot<R?>? newValue,
             void Function() cancel)
         handler, {
-    R initialValue,
-    String instanceName,
+    R? initialValue,
+    String? instanceName,
   }) =>
-      widget._state.value.registerFutureHandler<T, R>(select, handler,
+      widget._state.value.registerFutureHandler<T, R?>(select, handler,
           initialValueProvider: () => initialValue,
           instanceName: instanceName,
           allowMultipleSubscribers: true);
@@ -429,9 +430,9 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// return `true` within [timeout]
   /// It will trigger a rebuild if this state changes
   bool allReady(
-          {void Function(BuildContext context) onReady,
-          void Function(BuildContext context, Object error) onError,
-          Duration timeout}) =>
+          {void Function(BuildContext? context)? onReady,
+          void Function(BuildContext? context, Object? error)? onError,
+          Duration? timeout}) =>
       widget._state.value
           .allReady(onReady: onReady, onError: onError, timeout: timeout);
 
@@ -441,11 +442,11 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// you can force a timeout Exceptions if [isReady] hasn't
   /// return `true` within [timeout]
   /// It will trigger a rebuild if this state changes
-  bool isReady<T>(
-          {void Function(BuildContext context) onReady,
-          void Function(BuildContext context, Object error) onError,
-          Duration timeout,
-          String instanceName}) =>
+  bool isReady<T extends Object>(
+          {void Function(BuildContext? context)? onReady,
+          void Function(BuildContext? context, Object? error)? onError,
+          Duration? timeout,
+          String? instanceName}) =>
       widget._state.value.isReady<T>(
           instanceName: instanceName,
           onReady: onReady,
@@ -461,6 +462,7 @@ mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
   /// an async disposal function, that functions won't be awaited.
   /// I would recommend doing pushing and popping from your business layer but sometimes
   /// this might come in handy
-  void pushScope({void Function(GetIt getIt) init, void Function() dispose}) =>
+  void pushScope(
+          {void Function(GetIt getIt)? init, void Function()? dispose}) =>
       widget._state.value.pushScope(init: init, dispose: dispose);
 }

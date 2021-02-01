@@ -7,32 +7,32 @@ import 'package:get_it/get_it.dart';
 import 'package:get_it_mixin/get_it_mixin.dart';
 
 class Model extends ChangeNotifier {
-  String constantValue;
-  String _country;
-  set country(String val) {
+  String? constantValue;
+  String? _country;
+  set country(String? val) {
     _country = val;
     notifyListeners();
   }
 
-  String get country => _country;
-  String _country2;
-  set country2(String val) {
+  String? get country => _country;
+  String? _country2;
+  set country2(String? val) {
     _country2 = val;
     notifyListeners();
   }
 
-  String get country2 => _country2;
-  final ValueNotifier<String> name;
-  final Model nestedModel;
+  String? get country2 => _country2;
+  final ValueNotifier<String>? name;
+  final Model? nestedModel;
   final StreamController<String> streamController =
       StreamController<String>.broadcast();
 
   Model(
       {this.constantValue,
-      String country,
+      String? country,
       this.name,
       this.nestedModel,
-      String country2})
+      String? country2})
       : _country = country,
         _country2 = country2;
 
@@ -51,7 +51,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
   final bool testIsReady;
   final bool testAllReady;
   TestStateLessWidget(
-      {Key key,
+      {Key? key,
       this.watchTwice = false,
       this.watchOnlyTwice = false,
       this.watchXtwice = false,
@@ -65,13 +65,13 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
   @override
   Widget build(BuildContext context) {
     buildCount++;
-    final onlyRead = get<Model>().constantValue;
+    final onlyRead = get<Model>().constantValue!;
     final notifierVal = watch<ValueNotifier<String>, String>();
-    final country = watchOnly((Model x) => x.country);
-    final country2 = watchOnly((Model x) => x.country2);
-    final name = watchX((Model x) => x.name);
+    final country = watchOnly((Model x) => x.country!);
+    final country2 = watchOnly(((Model x) => x.country2!));
+    final name = watchX((Model x) => x.name!);
     final nestedCountry =
-        watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
+        watchXOnly((Model x) => x.nestedModel, ((Model? n) => n?.country!));
     final streamResult = watchStream((Model x) => x.stream, 'streamResult');
     final futureResult = watchFuture((Model x) => x.future, 'futureResult');
     registerStreamHandler((Model x) => x.stream, (context, x, cancel) {
@@ -81,23 +81,23 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
       }
     });
     registerFutureHandler((Model x) => x.future, (context, x, cancel) {
-      futureHandlerResult = x.data;
+      futureHandlerResult = x!.data;
       if (streamHandlerResult == 'Cancel') {
         cancel();
       }
     });
-    registerHandler((Model x) => x.name, (context, x, cancel) {
+    registerHandler((Model x) => x.name!, (context, dynamic x, cancel) {
       listenableHandlerResult = x;
       if (x == 'Cancel') {
         cancel();
       }
     });
-    bool allReadyResult;
+    bool? allReadyResult;
     if (testAllReady) {
       allReadyResult =
           allReady(onReady: (context) => allReadyHandlerResult = 'Ready');
     }
-    bool isReadyResult;
+    bool? isReadyResult;
 
     if (testIsReady) {
       isReadyResult = isReady<Model>(
@@ -111,7 +111,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
       final country = watchOnly((Model x) => x.country);
     }
     if (watchXtwice) {
-      final name = watchX((Model x) => x.name);
+      final name = watchX((Model x) => x.name!);
     }
     if (watchXonlytwice) {
       final nestedCountry =
@@ -133,8 +133,8 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
             Text(country, key: Key('country')),
             Text(country2, key: Key('country2')),
             Text(name, key: Key('name')),
-            Text(nestedCountry, key: Key('nestedCountry')),
-            Text(streamResult.data, key: Key('streamResult')),
+            Text(nestedCountry!, key: Key('nestedCountry')),
+            Text(streamResult.data!, key: Key('streamResult')),
             Text(futureResult.data, key: Key('futureResult')),
             Text(allReadyResult.toString(), key: Key('allReadyResult')),
             Text(isReadyResult.toString(), key: Key('isReadyResult')),
@@ -145,14 +145,14 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
   }
 }
 
-Model theModel;
-ValueNotifier<String> valNotifier;
-int buildCount;
-String streamHandlerResult;
-String futureHandlerResult;
-String listenableHandlerResult;
-String allReadyHandlerResult;
-String isReadyHandlerResult;
+late Model theModel;
+late ValueNotifier<String> valNotifier;
+int buildCount = 0;
+String? streamHandlerResult;
+String? futureHandlerResult;
+String? listenableHandlerResult;
+String? allReadyHandlerResult;
+String? isReadyHandlerResult;
 
 void main() {
   setUp(() async {
@@ -313,7 +313,7 @@ void main() {
   });
   testWidgets('test watchX', (tester) async {
     await tester.pumpWidget(TestStateLessWidget());
-    theModel.name.value = '42';
+    theModel.name!.value = '42';
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
@@ -340,7 +340,7 @@ void main() {
 
   testWidgets('test watchXonly', (tester) async {
     await tester.pumpWidget(TestStateLessWidget());
-    theModel.nestedModel.country = '42';
+    theModel.nestedModel!.country = '42';
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
@@ -452,7 +452,7 @@ void main() {
     await tester.pumpWidget(TestStateLessWidget());
 
     theModel.country = 'Lummerland';
-    theModel.name.value = '42';
+    theModel.name!.value = '42';
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
@@ -480,14 +480,14 @@ void main() {
     await tester.pumpWidget(TestStateLessWidget());
 
     expect(theModel.hasListeners, true);
-    expect(theModel.name.hasListeners, true);
+    expect(theModel.name!.hasListeners, true);
     expect(theModel.streamController.hasListener, true);
     expect(valNotifier.hasListeners, true);
 
     await tester.pumpWidget(SizedBox.shrink());
 
     expect(theModel.hasListeners, false);
-    expect(theModel.name.hasListeners, false);
+    expect(theModel.name!.hasListeners, false);
     expect(theModel.streamController.hasListener, false);
     expect(valNotifier.hasListeners, false);
 
@@ -496,7 +496,7 @@ void main() {
   testWidgets('test handlers', (tester) async {
     await tester.pumpWidget(TestStateLessWidget());
 
-    theModel.name.value = '42';
+    theModel.name!.value = '42';
     theModel.streamController.sink.add('4711');
     theModel.completer.complete('66');
 
@@ -506,11 +506,11 @@ void main() {
     expect(listenableHandlerResult, '42');
     expect(futureHandlerResult, '66');
 
-    theModel.name.value = 'Cancel';
+    theModel.name!.value = 'Cancel';
     theModel.streamController.sink.add('Cancel');
     await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
 
-    theModel.name.value = '42';
+    theModel.name!.value = '42';
     theModel.streamController.sink.add('4711');
     await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
 
@@ -521,7 +521,7 @@ void main() {
     await tester.pumpWidget(SizedBox.shrink());
 
     expect(theModel.hasListeners, false);
-    expect(theModel.name.hasListeners, false);
+    expect(theModel.name!.hasListeners, false);
     expect(theModel.streamController.hasListener, false);
     expect(valNotifier.hasListeners, false);
   });

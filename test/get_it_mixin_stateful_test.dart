@@ -7,20 +7,22 @@ import 'package:get_it/get_it.dart';
 import 'package:get_it_mixin/get_it_mixin.dart';
 
 class Model extends ChangeNotifier {
-  String constantValue;
-  String _country;
-  set country(String val) {
+  String? constantValue;
+  String? _country;
+  set country(String? val) {
     _country = val;
     notifyListeners();
   }
 
-  String get country => _country;
-  final ValueNotifier<String> name;
-  final Model nestedModel;
+  bool get hasListeners => super.hasListeners;
+  String? get country => _country;
+  final ValueNotifier<String>? name;
+  final Model? nestedModel;
+  // ignore: close_sinks
   final StreamController<String> streamController =
       StreamController<String>.broadcast();
 
-  Model({this.constantValue, String country, this.name, this.nestedModel})
+  Model({this.constantValue, String? country, this.name, this.nestedModel})
       : _country = country;
 
   Stream<String> get stream => streamController.stream;
@@ -37,7 +39,7 @@ class TestStateFullWidget extends StatefulWidget with GetItStatefulWidgetMixin {
   final bool watchFutureTwice;
 
   TestStateFullWidget(
-      {Key key,
+      {Key? key,
       this.watchTwice = false,
       this.watchOnlyTwice = false,
       this.watchXtwice = false,
@@ -55,21 +57,21 @@ class _TestStateFullWidgetState extends State<TestStateFullWidget>
   @override
   Widget build(BuildContext context) {
     buildCount++;
-    final onlyRead = get<Model>().constantValue;
+    final onlyRead = get<Model>().constantValue!;
     final notifierVal = watch<ValueNotifier<String>, String>();
-    final country = watchOnly((Model x) => x.country);
-    final name = watchX((Model x) => x.name);
+    final country = watchOnly(((Model x) => x.country!));
+    final name = watchX((Model x) => x.name!);
     final nestedCountry =
-        watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
+        watchXOnly((Model x) => x.nestedModel, ((Model? n) => n?.country!));
     final streamResult = watchStream((Model x) => x.stream, 'streamResult');
     final futureResult = watchFuture((Model x) => x.future, 'futureResult');
-    registerStreamHandler((Model x) => x.stream, (contex, x, cancel) {
-      streamHandlerResult = x.data;
+    registerStreamHandler((Model x) => x.stream, (contex, s, cancel) {
+      streamHandlerResult = s.data;
       if (streamHandlerResult == 'Cancel') {
         cancel();
       }
     });
-    registerHandler((Model x) => x.name, (contex, x, cancel) {
+    registerHandler((Model x) => x.name, (contex, dynamic x, cancel) {
       listenableHandlerResult = x;
       if (x == 'Cancel') {
         cancel();
@@ -82,11 +84,11 @@ class _TestStateFullWidgetState extends State<TestStateFullWidget>
       final country = watchOnly((Model x) => x.country);
     }
     if (widget.watchXtwice) {
-      final name = watchX((Model x) => x.name);
+      final name = watchX((Model x) => x.name!);
     }
     if (widget.watchXonlytwice) {
       final nestedCountry =
-          watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
+          watchXOnly((Model x) => x.nestedModel, (Model? n) => n!.country);
     }
     if (widget.watchStreamTwice) {
       final streamResult = watchStream((Model x) => x.stream, 'streamResult');
@@ -103,8 +105,8 @@ class _TestStateFullWidgetState extends State<TestStateFullWidget>
             Text(notifierVal, key: Key('notifierVal')),
             Text(country, key: Key('country')),
             Text(name, key: Key('name')),
-            Text(nestedCountry, key: Key('nestedCountry')),
-            Text(streamResult.data, key: Key('streamResult')),
+            Text(nestedCountry!, key: Key('nestedCountry')),
+            Text(streamResult.data!, key: Key('streamResult')),
             Text(futureResult.data, key: Key('futureResult')),
           ],
         ),
@@ -113,11 +115,11 @@ class _TestStateFullWidgetState extends State<TestStateFullWidget>
   }
 }
 
-Model theModel;
-ValueNotifier<String> valNotifier;
-int buildCount;
-String streamHandlerResult;
-String listenableHandlerResult;
+late Model theModel;
+late ValueNotifier<String> valNotifier;
+int buildCount = 0;
+String? streamHandlerResult;
+String? listenableHandlerResult;
 
 void main() {
   setUp(() async {
@@ -270,7 +272,7 @@ void main() {
   });
   testWidgets('test watchX', (tester) async {
     await tester.pumpWidget(TestStateFullWidget());
-    theModel.name.value = '42';
+    theModel.name!.value = '42';
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
@@ -297,7 +299,7 @@ void main() {
 
   testWidgets('test watchXonly', (tester) async {
     await tester.pumpWidget(TestStateFullWidget());
-    theModel.nestedModel.country = '42';
+    theModel.nestedModel!.country = '42';
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
@@ -407,7 +409,7 @@ void main() {
   });
   testWidgets('change multiple data', (tester) async {
     await tester.pumpWidget(TestStateFullWidget());
-    theModel.name.value = '42';
+    theModel.name!.value = '42';
     theModel._country = 'Lummerland';
     await tester.pump();
 
@@ -436,14 +438,14 @@ void main() {
     await tester.pumpWidget(TestStateFullWidget());
 
     expect(theModel.hasListeners, true);
-    expect(theModel.name.hasListeners, true);
+    expect(theModel.name!.hasListeners, true);
     expect(theModel.streamController.hasListener, true);
     expect(valNotifier.hasListeners, true);
 
     await tester.pumpWidget(SizedBox.shrink());
 
     expect(theModel.hasListeners, false);
-    expect(theModel.name.hasListeners, false);
+    expect(theModel.name!.hasListeners, false);
     expect(theModel.streamController.hasListener, false);
     expect(valNotifier.hasListeners, false);
 
@@ -452,18 +454,18 @@ void main() {
   testWidgets('test handlers', (tester) async {
     await tester.pumpWidget(TestStateFullWidget());
 
-    theModel.name.value = '42';
+    theModel.name!.value = '42';
     theModel.streamController.sink.add('4711');
     await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
 
     expect(streamHandlerResult, '4711');
     expect(listenableHandlerResult, '42');
 
-    theModel.name.value = 'Cancel';
+    theModel.name!.value = 'Cancel';
     theModel.streamController.sink.add('Cancel');
     await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
 
-    theModel.name.value = '42';
+    theModel.name!.value = '42';
     theModel.streamController.sink.add('4711');
     await tester.runAsync(() => Future.delayed(Duration(milliseconds: 100)));
 
@@ -474,7 +476,7 @@ void main() {
     await tester.pumpWidget(SizedBox.shrink());
 
     expect(theModel.hasListeners, false);
-    expect(theModel.name.hasListeners, false);
+    expect(theModel.name!.hasListeners, false);
     expect(theModel.streamController.hasListener, false);
     expect(valNotifier.hasListeners, false);
   });

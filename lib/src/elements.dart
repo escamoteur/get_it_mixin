@@ -1,10 +1,10 @@
 part of 'mixin.dart';
 
 mixin _GetItElement on ComponentElement {
-  /*late*/ _MixinState _state;
+  late _MixinState _state;
 
   @override
-  void mount(Element parent, newSlot) {
+  void mount(Element? parent, newSlot) {
     _state.init(this);
     super.mount(parent, newSlot);
   }
@@ -39,7 +39,7 @@ class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement
     widget._state.value = _state;
   }
   @override
-  W get widget => super.widget;
+  W get widget => super.widget as W;
 
   @override
   void update(W newWidget) {
@@ -58,7 +58,7 @@ class _StatefulMixInElement<W extends GetItStatefulWidgetMixin>
     widget._state.value = _state;
   }
   @override
-  W get widget => super.widget;
+  W get widget => super.widget as W;
 
   @override
   void update(W newWidget) {
