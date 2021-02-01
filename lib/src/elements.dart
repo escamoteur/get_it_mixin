@@ -1,7 +1,7 @@
 part of 'mixin.dart';
 
 mixin _GetItElement on ComponentElement {
-  _MixinState _state;
+  /*late*/ _MixinState _state;
 
   @override
   void mount(Element parent, newSlot) {

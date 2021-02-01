@@ -14,7 +14,7 @@ class _MutableWrapper<T> {
 
 mixin GetItMixin on StatelessWidget {
   /// this is an ugly hack so that you don't get a warning in the StatelessWidget
-  final _MutableWrapper<_MixinState> _state = _MutableWrapper<_MixinState>();
+  final _MutableWrapper<_MixinState/*!*/> _state = _MutableWrapper<_MixinState/*!*/>();
   @override
   StatelessElement createElement() => _StatelessMixInElement(this);
 
@@ -26,7 +26,7 @@ mixin GetItMixin on StatelessWidget {
   /// function used for this type or based on a name.
   /// for factories you can pass up to 2 parameters [param1,param2] they have to match the types
   /// given at registration with [registerFactoryParam()]
-  T get<T>({String instanceName, dynamic param1, dynamic param2}) =>
+  T/*!*/ get<T>({String instanceName, dynamic param1, dynamic param2}) =>
       GetIt.I<T>(instanceName: instanceName, param1: param1, param2: param2);
 
   /// like [get] but for async registrations
@@ -36,7 +36,7 @@ mixin GetItMixin on StatelessWidget {
           instanceName: instanceName, param1: param1, param2: param2);
 
   /// like [get] but with an additional [select] function to return a member of [T]
-  R getX<T, R>(R Function(T) accessor, {String instanceName}) {
+  R getX<T, R>(R Function(T/*!*/) accessor, {String instanceName}) {
     assert(accessor != null);
     return accessor(GetIt.I<T>(instanceName: instanceName));
   }

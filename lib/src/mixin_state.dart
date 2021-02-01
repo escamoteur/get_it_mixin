@@ -13,10 +13,12 @@ class _WatchEntry<TObservedObject, TValue>
   _WatchEntry(
       {this.notificationHandler,
       this.subscription,
-      void Function(_WatchEntry<TObservedObject, TValue> entry) dispose,
+      @required
+          void Function(_WatchEntry<TObservedObject, TValue> entry) dispose,
       this.lastValue,
       this.selector,
-      this.observedObject})
+      @required
+          this.observedObject})
       : _dispose = dispose;
   void dispose() {
     _dispose(this);
@@ -117,7 +119,7 @@ class _MixinState {
 
   /// [handler] and [executeImmediately] are used by [registerHandler]
   R watchX<T, R>(
-    ValueListenable<R> Function(T) select, {
+    ValueListenable<R> /*!*/ Function(T) select, {
     void Function(BuildContext contex, R newValue, void Function() dispose)
         handler,
     bool executeImmediately = false,
@@ -164,7 +166,7 @@ class _MixinState {
   }
 
   R watchOnly<T extends Listenable, R>(
-    R Function(T) only, {
+    R Function(T /*!*/) only, {
     String instanceName,
   }) {
     assert(only != null, 'only can\'t be null if you use watchOnly');

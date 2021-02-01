@@ -9,7 +9,7 @@ dependencies:
     sdk: flutter
   http: ^0.12.2
   flutter_command: any 
-  get_it: ^5.0.0
+  get_it: ^6.0.0-nullsafety.2
   get_it_mixin:
     path: ../
   functional_listener: any
