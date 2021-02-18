@@ -24,21 +24,15 @@ class Model extends ChangeNotifier {
   String? get country2 => _country2;
   final ValueNotifier<String>? name;
   final Model? nestedModel;
-  final StreamController<String> streamController =
-      StreamController<String>.broadcast();
+  final StreamController<String> streamController = StreamController<String>.broadcast();
 
-  Model(
-      {this.constantValue,
-      String? country,
-      this.name,
-      this.nestedModel,
-      String? country2})
+  Model({this.constantValue, String? country, this.name, this.nestedModel, String? country2})
       : _country = country,
         _country2 = country2;
 
   Stream<String> get stream => streamController.stream;
   final Completer<String> completer = Completer<String>();
-  Future get future => completer.future;
+  Future<String> get future => completer.future;
 }
 
 class TestStateLessWidget extends StatelessWidget with GetItMixin {
@@ -70,17 +64,16 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
     final country = watchOnly((Model x) => x.country!);
     final country2 = watchOnly(((Model x) => x.country2!));
     final name = watchX((Model x) => x.name!);
-    final nestedCountry =
-        watchXOnly((Model x) => x.nestedModel, ((Model? n) => n?.country!));
+    final nestedCountry = watchXOnly((Model x) => x.nestedModel, ((Model? n) => n?.country!));
     final streamResult = watchStream((Model x) => x.stream, 'streamResult');
     final futureResult = watchFuture((Model x) => x.future, 'futureResult');
-    registerStreamHandler((Model x) => x.stream, (context, x, cancel) {
+    registerStreamHandler<Model, String>((x) => x.stream, (context, x, cancel) {
       streamHandlerResult = x.data;
       if (streamHandlerResult == 'Cancel') {
         cancel();
       }
     });
-    registerFutureHandler((Model x) => x.future, (context, x, cancel) {
+    registerFutureHandler<Model, String>((Model x) => x.future, (context, x, cancel) {
       futureHandlerResult = x!.data;
       if (streamHandlerResult == 'Cancel') {
         cancel();
@@ -94,15 +87,12 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
     });
     bool? allReadyResult;
     if (testAllReady) {
-      allReadyResult =
-          allReady(onReady: (context) => allReadyHandlerResult = 'Ready');
+      allReadyResult = allReady(onReady: (context) => allReadyHandlerResult = 'Ready');
     }
     bool? isReadyResult;
 
     if (testIsReady) {
-      isReadyResult = isReady<Model>(
-          instanceName: 'isReadyTest',
-          onReady: (context) => isReadyHandlerResult = 'Ready');
+      isReadyResult = isReady<Model>(instanceName: 'isReadyTest', onReady: (context) => isReadyHandlerResult = 'Ready');
     }
     if (watchTwice) {
       final notifierVal = watch<ValueNotifier<String>, String>();
@@ -114,8 +104,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
       final name = watchX((Model x) => x.name!);
     }
     if (watchXonlytwice) {
-      final nestedCountry =
-          watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
+      final nestedCountry = watchXOnly((Model x) => x.nestedModel, (Model n) => n.country);
     }
     if (watchStreamTwice) {
       final streamResult = watchStream((Model x) => x.stream, 'streamResult');
@@ -135,7 +124,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
             Text(name, key: Key('name')),
             Text(nestedCountry!, key: Key('nestedCountry')),
             Text(streamResult.data!, key: Key('streamResult')),
-            Text(futureResult.data, key: Key('futureResult')),
+            Text(futureResult.data!, key: Key('futureResult')),
             Text(allReadyResult.toString(), key: Key('allReadyResult')),
             Text(isReadyResult.toString(), key: Key('isReadyResult')),
           ],
@@ -182,17 +171,13 @@ void main() {
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
-    final notifierVal =
-        tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
+    final notifierVal = tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
     final country = tester.widget<Text>(find.byKey(Key('country'))).data;
     final country2 = tester.widget<Text>(find.byKey(Key('country2'))).data;
     final name = tester.widget<Text>(find.byKey(Key('name'))).data;
-    final nestedCountry =
-        tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
-    final streamResult =
-        tester.widget<Text>(find.byKey(Key('streamResult'))).data;
-    final futureResult =
-        tester.widget<Text>(find.byKey(Key('futureResult'))).data;
+    final nestedCountry = tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
+    final streamResult = tester.widget<Text>(find.byKey(Key('streamResult'))).data;
+    final futureResult = tester.widget<Text>(find.byKey(Key('futureResult'))).data;
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
@@ -264,16 +249,12 @@ void main() {
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
-    final notifierVal =
-        tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
+    final notifierVal = tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
     final country = tester.widget<Text>(find.byKey(Key('country'))).data;
     final name = tester.widget<Text>(find.byKey(Key('name'))).data;
-    final nestedCountry =
-        tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
-    final streamResult =
-        tester.widget<Text>(find.byKey(Key('streamResult'))).data;
-    final futureResult =
-        tester.widget<Text>(find.byKey(Key('futureResult'))).data;
+    final nestedCountry = tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
+    final streamResult = tester.widget<Text>(find.byKey(Key('streamResult'))).data;
+    final futureResult = tester.widget<Text>(find.byKey(Key('futureResult'))).data;
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
@@ -291,16 +272,12 @@ void main() {
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
-    final notifierVal =
-        tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
+    final notifierVal = tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
     final country = tester.widget<Text>(find.byKey(Key('country'))).data;
     final name = tester.widget<Text>(find.byKey(Key('name'))).data;
-    final nestedCountry =
-        tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
-    final streamResult =
-        tester.widget<Text>(find.byKey(Key('streamResult'))).data;
-    final futureResult =
-        tester.widget<Text>(find.byKey(Key('futureResult'))).data;
+    final nestedCountry = tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
+    final streamResult = tester.widget<Text>(find.byKey(Key('streamResult'))).data;
+    final futureResult = tester.widget<Text>(find.byKey(Key('futureResult'))).data;
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, '42');
@@ -317,16 +294,12 @@ void main() {
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
-    final notifierVal =
-        tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
+    final notifierVal = tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
     final country = tester.widget<Text>(find.byKey(Key('country'))).data;
     final name = tester.widget<Text>(find.byKey(Key('name'))).data;
-    final nestedCountry =
-        tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
-    final streamResult =
-        tester.widget<Text>(find.byKey(Key('streamResult'))).data;
-    final futureResult =
-        tester.widget<Text>(find.byKey(Key('futureResult'))).data;
+    final nestedCountry = tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
+    final streamResult = tester.widget<Text>(find.byKey(Key('streamResult'))).data;
+    final futureResult = tester.widget<Text>(find.byKey(Key('futureResult'))).data;
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
@@ -344,16 +317,12 @@ void main() {
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
-    final notifierVal =
-        tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
+    final notifierVal = tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
     final country = tester.widget<Text>(find.byKey(Key('country'))).data;
     final name = tester.widget<Text>(find.byKey(Key('name'))).data;
-    final nestedCountry =
-        tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
-    final streamResult =
-        tester.widget<Text>(find.byKey(Key('streamResult'))).data;
-    final futureResult =
-        tester.widget<Text>(find.byKey(Key('futureResult'))).data;
+    final nestedCountry = tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
+    final streamResult = tester.widget<Text>(find.byKey(Key('streamResult'))).data;
+    final futureResult = tester.widget<Text>(find.byKey(Key('futureResult'))).data;
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
@@ -364,23 +333,18 @@ void main() {
     expect(futureResult, 'futureResult');
     expect(buildCount, 2);
   });
-  testWidgets('test watchOnly with notification but no value change',
-      (tester) async {
+  testWidgets('test watchOnly with notification but no value change', (tester) async {
     await tester.pumpWidget(TestStateLessWidget());
     theModel.notifyListeners();
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
-    final notifierVal =
-        tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
+    final notifierVal = tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
     final country = tester.widget<Text>(find.byKey(Key('country'))).data;
     final name = tester.widget<Text>(find.byKey(Key('name'))).data;
-    final nestedCountry =
-        tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
-    final streamResult =
-        tester.widget<Text>(find.byKey(Key('streamResult'))).data;
-    final futureResult =
-        tester.widget<Text>(find.byKey(Key('futureResult'))).data;
+    final nestedCountry = tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
+    final streamResult = tester.widget<Text>(find.byKey(Key('streamResult'))).data;
+    final futureResult = tester.widget<Text>(find.byKey(Key('futureResult'))).data;
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
@@ -398,16 +362,12 @@ void main() {
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
-    final notifierVal =
-        tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
+    final notifierVal = tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
     final country = tester.widget<Text>(find.byKey(Key('country'))).data;
     final name = tester.widget<Text>(find.byKey(Key('name'))).data;
-    final nestedCountry =
-        tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
-    final streamResult =
-        tester.widget<Text>(find.byKey(Key('streamResult'))).data;
-    final futureResult =
-        tester.widget<Text>(find.byKey(Key('futureResult'))).data;
+    final nestedCountry = tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
+    final streamResult = tester.widget<Text>(find.byKey(Key('streamResult'))).data;
+    final futureResult = tester.widget<Text>(find.byKey(Key('futureResult'))).data;
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
@@ -425,16 +385,12 @@ void main() {
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
-    final notifierVal =
-        tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
+    final notifierVal = tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
     final country = tester.widget<Text>(find.byKey(Key('country'))).data;
     final name = tester.widget<Text>(find.byKey(Key('name'))).data;
-    final nestedCountry =
-        tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
-    final streamResult =
-        tester.widget<Text>(find.byKey(Key('streamResult'))).data;
-    final futureResult =
-        tester.widget<Text>(find.byKey(Key('futureResult'))).data;
+    final nestedCountry = tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
+    final streamResult = tester.widget<Text>(find.byKey(Key('streamResult'))).data;
+    final futureResult = tester.widget<Text>(find.byKey(Key('futureResult'))).data;
 
     final error = tester.takeException();
     print(error);
@@ -456,16 +412,12 @@ void main() {
     await tester.pump();
 
     final onlyRead = tester.widget<Text>(find.byKey(Key('onlyRead'))).data;
-    final notifierVal =
-        tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
+    final notifierVal = tester.widget<Text>(find.byKey(Key('notifierVal'))).data;
     final country = tester.widget<Text>(find.byKey(Key('country'))).data;
     final name = tester.widget<Text>(find.byKey(Key('name'))).data;
-    final nestedCountry =
-        tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
-    final streamResult =
-        tester.widget<Text>(find.byKey(Key('streamResult'))).data;
-    final futureResult =
-        tester.widget<Text>(find.byKey(Key('futureResult'))).data;
+    final nestedCountry = tester.widget<Text>(find.byKey(Key('nestedCountry'))).data;
+    final streamResult = tester.widget<Text>(find.byKey(Key('streamResult'))).data;
+    final futureResult = tester.widget<Text>(find.byKey(Key('futureResult'))).data;
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
@@ -531,8 +483,7 @@ void main() {
     ));
     await tester.pump(Duration(milliseconds: 10));
 
-    final allReadyResult =
-        tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
+    final allReadyResult = tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
 
     expect(allReadyResult, 'true');
     expect(allReadyHandlerResult, 'Ready');
@@ -540,8 +491,7 @@ void main() {
     expect(buildCount, 2);
   });
   testWidgets('allReady async object that is finished', (tester) async {
-    GetIt.I.registerSingletonAsync(
-        () => Future.delayed(Duration(milliseconds: 10), () => Model()),
+    GetIt.I.registerSingletonAsync(() => Future.delayed(Duration(milliseconds: 10), () => Model()),
         instanceName: 'asyncObject');
     await tester.pump(Duration(milliseconds: 120));
     await tester.pumpWidget(TestStateLessWidget(
@@ -549,41 +499,35 @@ void main() {
     ));
     await tester.pump();
 
-    var allReadyResult =
-        tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
+    var allReadyResult = tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
 
     expect(allReadyResult, 'true');
     expect(allReadyHandlerResult, 'Ready');
 
     expect(buildCount, 2);
   });
-  testWidgets('allReady async object that is not finished at the start',
-      (tester) async {
-    GetIt.I.registerSingletonAsync(
-        () => Future.delayed(Duration(milliseconds: 10), () => Model()),
+  testWidgets('allReady async object that is not finished at the start', (tester) async {
+    GetIt.I.registerSingletonAsync(() => Future.delayed(Duration(milliseconds: 10), () => Model()),
         instanceName: 'asyncObject');
     await tester.pumpWidget(TestStateLessWidget(
       testAllReady: true,
     ));
     await tester.pump();
 
-    var allReadyResult =
-        tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
+    var allReadyResult = tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
 
     expect(allReadyResult, 'false');
     expect(allReadyHandlerResult, null);
 
     await tester.pump(Duration(milliseconds: 120));
-    allReadyResult =
-        tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
+    allReadyResult = tester.widget<Text>(find.byKey(Key('allReadyResult'))).data;
 
     expect(allReadyResult, 'true');
     expect(allReadyHandlerResult, 'Ready');
     expect(buildCount, 2);
   });
   testWidgets('isReady async object that is finished', (tester) async {
-    GetIt.I.registerSingletonAsync<Model>(
-        () => Future.delayed(Duration(milliseconds: 10), () => Model()),
+    GetIt.I.registerSingletonAsync<Model>(() => Future.delayed(Duration(milliseconds: 10), () => Model()),
         instanceName: 'isReadyTest');
     await tester.pump(Duration(milliseconds: 120));
     await tester.pumpWidget(TestStateLessWidget(
@@ -591,18 +535,15 @@ void main() {
     ));
     await tester.pump();
 
-    var isReadyResult =
-        tester.widget<Text>(find.byKey(Key('isReadyResult'))).data;
+    var isReadyResult = tester.widget<Text>(find.byKey(Key('isReadyResult'))).data;
 
     expect(isReadyResult, 'true');
     expect(isReadyHandlerResult, 'Ready');
 
     expect(buildCount, 2);
   });
-  testWidgets('isReady async object that is not finished at the start',
-      (tester) async {
-    GetIt.I.registerSingletonAsync(
-        () => Future.delayed(Duration(milliseconds: 10), () => Model()),
+  testWidgets('isReady async object that is not finished at the start', (tester) async {
+    GetIt.I.registerSingletonAsync(() => Future.delayed(Duration(milliseconds: 10), () => Model()),
         instanceName: 'isReadyTest');
     await tester.pumpWidget(TestStateLessWidget(
       testIsReady: true,
@@ -610,8 +551,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    var isReadyResult =
-        tester.widget<Text>(find.byKey(Key('isReadyResult'))).data;
+    var isReadyResult = tester.widget<Text>(find.byKey(Key('isReadyResult'))).data;
 
     expect(isReadyResult, 'false');
     expect(isReadyHandlerResult, null);

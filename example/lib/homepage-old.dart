@@ -11,14 +11,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  ListenableSubscription errorSubscription;
+  ListenableSubscription? errorSubscription;
 
   @override
   void didChangeDependencies() {
     errorSubscription ??= GetIt.I<TheViewModel>()
         .updateWeatherCommand
         .thrownExceptions
-        .where((x) => x != null) // filter out the error value reset
+        .where((CommandError? x) => x != null) // filter out the error value reset
         .listen((error, _) {
       showDialog(
           context: context,
@@ -63,8 +63,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 WeatherListView(),
                 ValueListenableBuilder<bool>(
-                  valueListenable:
-                      GetIt.I<TheViewModel>().updateWeatherCommand.isExecuting,
+                  valueListenable: GetIt.I<TheViewModel>().updateWeatherCommand.isExecuting,
                   builder: (BuildContext context, bool isRunning, _) {
                     // if true we show a busy Spinner otherwise the ListView
                     if (isRunning == true) {
@@ -90,13 +89,10 @@ class _HomePageState extends State<HomePage> {
               children: <Widget>[
                 Expanded(
                   child: ValueListenableBuilder<bool>(
-                    valueListenable:
-                        GetIt.I<TheViewModel>().updateWeatherCommand.canExecute,
+                    valueListenable: GetIt.I<TheViewModel>().updateWeatherCommand.canExecute,
                     builder: (BuildContext context, bool canExecute, _) {
                       // Depending on the value of canEcecute we set or clear the Handler
-                      final handler = canExecute
-                          ? GetIt.I<TheViewModel>().updateWeatherCommand
-                          : null;
+                      final handler = canExecute ? GetIt.I<TheViewModel>().updateWeatherCommand : null;
                       return RaisedButton(
                         child: Text("Update"),
                         color: Color.fromARGB(255, 33, 150, 243),
@@ -107,13 +103,11 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 ValueListenableBuilder<bool>(
-                    valueListenable:
-                        GetIt.I<TheViewModel>().setExecutionStateCommand,
+                    valueListenable: GetIt.I<TheViewModel>().setExecutionStateCommand,
                     builder: (context, value, _) {
                       return Switch(
                         value: value,
-                        onChanged:
-                            GetIt.I<TheViewModel>().setExecutionStateCommand,
+                        onChanged: GetIt.I<TheViewModel>().setExecutionStateCommand,
                       );
                     })
               ],
