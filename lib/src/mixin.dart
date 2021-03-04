@@ -225,7 +225,7 @@ mixin GetItStatefulWidgetMixin on StatefulWidget {
   StatefulElement createElement() => _StatefulMixInElement(this);
 }
 
-mixin GetItStateMixin<T extends GetItStatefulWidgetMixin> on State<T> {
+mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> {
   /// this is an ugly hack so that you don't get a warning in the statefulwidget
   /// all the following functions can be called inside the build function but also
   /// the mixin takes care that everything is correctly disposed.

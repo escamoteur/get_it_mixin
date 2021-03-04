@@ -1,12 +1,12 @@
 name: get_it_mixin
 description: mixin on Stateless- and StatefulWidgts that makes binding the Widget to Objects stored in GetIt easier. 
-version: 1.5.1
+version: 2.0.0
 author: Thomas Burhart
 homepage: https://github.com/escamoteur/get_it_mixin
 
 environment:
   sdk: '>=2.12.0 <3.0.0'
-  flutter: ">=1.17.0 <2.0.0"
+  flutter: ">=1.17.0 <3.0.0"
 
 dependencies:
   get_it: ^6.0.0
@@ -14,6 +14,7 @@ dependencies:
     sdk: flutter
 
 dev_dependencies:
+  lint:
   flutter_test:
     sdk: flutter
 

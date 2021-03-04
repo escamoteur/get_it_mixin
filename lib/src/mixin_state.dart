@@ -2,10 +2,10 @@ part of 'mixin.dart';
 
 class _WatchEntry<TObservedObject, TValue> extends LinkedListEntry<_WatchEntry<Object, Object?>> {
   TObservedObject observedObject;
-  Function? notificationHandler;
+  VoidCallback? notificationHandler;
   StreamSubscription? subscription;
   TValue Function(TObservedObject)? selector;
-  void Function(_WatchEntry<TObservedObject, TValue> entry) _dispose;
+  final void Function(_WatchEntry<TObservedObject, TValue> entry) _dispose;
   TValue? lastValue;
 
   Object? activeCallbackIdentity;
@@ -48,6 +48,7 @@ class _MixinState {
   final _watchList = LinkedList<_WatchEntry<Object, Object?>>();
   _WatchEntry? currentWatch;
 
+  // ignore: use_setters_to_change_properties
   void init(Element element) {
     _element = element;
   }
@@ -98,12 +99,13 @@ class _MixinState {
       watch = _WatchEntry<T, T>(
         observedObject: listenable,
         dispose: (x) => x.observedObject.removeListener(
-          x.notificationHandler as void Function(),
+          x.notificationHandler!,
         ),
       );
       _appendWatch(watch);
     }
 
+    // ignore: prefer_function_declarations_over_variables
     final handler = () {
       _element!.markNeedsBuild();
     };
@@ -138,7 +140,7 @@ class _MixinState {
       watch = _WatchEntry<ValueListenable<R>, R?>(
         observedObject: listenable,
         dispose: (x) => x.observedObject.removeListener(
-          x.notificationHandler as void Function(),
+          x.notificationHandler!,
         ),
       );
       _appendWatch(watch, allowMultipleSubcribers: handler != null);
@@ -181,7 +183,7 @@ class _MixinState {
           observedObject: parentObject,
           selector: only,
           lastValue: onlyTarget,
-          dispose: (x) => x.observedObject.removeListener(x.notificationHandler as void Function()));
+          dispose: (x) => x.observedObject.removeListener(x.notificationHandler!));
       _appendWatch(watch, allowMultipleSubcribers: true);
       // we have to set `allowMultipleSubcribers=true` because we can't differentiate
       // one selector function from another.
@@ -223,7 +225,7 @@ class _MixinState {
           observedObject: listenable,
           lastValue: only(listenable),
           selector: only,
-          dispose: (x) => x.observedObject.removeListener(x.notificationHandler as void Function()));
+          dispose: (x) => x.observedObject.removeListener(x.notificationHandler!));
       _appendWatch(watch, allowMultipleSubcribers: true);
       // we have to set `allowMultipleSubcribers=true` because we can't differentiate
       // one selector function from another.
@@ -261,10 +263,11 @@ class _MixinState {
         /// Only if this isn't used to register a handler
         ///  still the same stream so we can directly return lastvalue
         if (handler == null) {
-          assert(watch.lastValue != null);
+          assert(watch.lastValue != null && watch.lastValue!.data != null);
+          // ignore: null_check_on_nullable_type_parameter
           return AsyncSnapshot<R>.withData(watch.lastValue!.connectionState, watch.lastValue!.data!);
         } else {
-          return AsyncSnapshot.nothing();
+          return AsyncSnapshot<R>.nothing();
         }
       } else {
         /// select returned a different value than the last time
@@ -287,7 +290,7 @@ class _MixinState {
         watch!.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
         _element!.markNeedsBuild();
       },
-      onError: (error) {
+      onError: (Object error) {
         if (handler != null) {
           handler(_element!, AsyncSnapshot.withError(ConnectionState.active, error), watch!.dispose);
         }
@@ -303,9 +306,10 @@ class _MixinState {
       if (initialValue != null) {
         handler(_element!, AsyncSnapshot.withData(ConnectionState.waiting, initialValue), watch.dispose);
       }
-      return AsyncSnapshot.nothing();
+      return AsyncSnapshot<R>.nothing();
     }
-    assert(watch.lastValue != null);
+    assert(watch.lastValue != null && watch.lastValue!.data != null);
+    // ignore: null_check_on_nullable_type_parameter
     return AsyncSnapshot<R>.withData(watch.lastValue!.connectionState, watch.lastValue!.data!);
   }
 
@@ -343,7 +347,7 @@ class _MixinState {
   /// if the Future has completed [handler] will be called every time until
   /// the handler calls `cancel` or the widget is destroyed
   /// [futureProvider] overrides a looked up future. Used to implement [allReady]
-  /// We use prover functions here so that [registerFutureHandler] ensure
+  /// We use provider functions here so that [registerFutureHandler] ensure
   /// that they are only called once.
   AsyncSnapshot<R?> registerFutureHandler<T extends Object, R>(
     Future<R> Function(T)? select,
@@ -357,7 +361,7 @@ class _MixinState {
   }) {
     assert(
         select != null || futureProvider != null,
-        'select can\'t be null if you use ${handler != null ? 'registerFutureHandler' : 'watchFuture'} '
+        "select can't be null if you use ${handler != null ? 'registerFutureHandler' : 'watchFuture'} "
         'if you want target directly pass (x)=>x');
 
     var watch = _getWatch() as _WatchEntry<Future<R>, AsyncSnapshot<R?>>?;
@@ -414,7 +418,7 @@ class _MixinState {
           handler!(_element!, watch.lastValue!, watch.dispose);
         }
       },
-      onError: (error) {
+      onError: (Object error) {
         if (watch!.activeCallbackIdentity == callbackIdentity) {
           // print('Future error');
           watch.lastValue = AsyncSnapshot.withError(ConnectionState.done, error);
@@ -484,6 +488,7 @@ class _MixinState {
     if (!_scopeWasPushed) {
       GetIt.I.pushNewScope(dispose: dispose);
       init?.call(GetIt.I);
+      _scopeWasPushed = true;
     }
   }
 

@@ -4,7 +4,7 @@ mixin _GetItElement on ComponentElement {
   late _MixinState _state;
 
   @override
-  void mount(Element? parent, newSlot) {
+  void mount(Element? parent, dynamic newSlot) {
     _state.init(this);
     super.mount(parent, newSlot);
   }
@@ -30,8 +30,7 @@ mixin _GetItElement on ComponentElement {
   }
 }
 
-class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement
-    with _GetItElement {
+class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement with _GetItElement {
   _StatelessMixInElement(
     W widget,
   ) : super(widget) {
@@ -49,8 +48,7 @@ class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement
   }
 }
 
-class _StatefulMixInElement<W extends GetItStatefulWidgetMixin>
-    extends StatefulElement with _GetItElement {
+class _StatefulMixInElement<W extends GetItStatefulWidgetMixin> extends StatefulElement with _GetItElement {
   _StatefulMixInElement(
     W widget,
   ) : super(widget) {
