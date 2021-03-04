@@ -6,7 +6,7 @@ homepage: https://github.com/escamoteur/get_it_mixin
 
 environment:
   sdk: '>=2.12.0 <3.0.0'
-  flutter: ">=1.17.0 <3.0.0"
+  flutter: '>=2.0.0' 
 
 dependencies:
   get_it: ^6.0.0
