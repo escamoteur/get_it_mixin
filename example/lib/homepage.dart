@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_weather_demo/the_viewmodel.dart';
+import 'package:flutter_weather_demo/weather_manager.dart';
 import 'package:functional_listener/functional_listener.dart';
 import 'package:get_it_mixin/get_it_mixin.dart';
 
@@ -11,15 +11,11 @@ class HomePage extends StatefulWidget with GetItStatefulWidgetMixin {
 }
 
 class _HomePageState extends State<HomePage> with GetItStateMixin {
-  ListenableSubscription errorSubscription;
+  ListenableSubscription? errorSubscription;
 
   @override
   void didChangeDependencies() {
-    errorSubscription ??= get<TheViewModel>()
-        .updateWeatherCommand
-        .thrownExceptions
-        .where((x) => x != null) // filter out the error value reset
-        .listen((error, _) {
+    errorSubscription ??= get<WeatherManager>().updateWeatherCommand.thrownExceptions.listen((error, _) {
       showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -32,17 +28,15 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
 
   @override
   void dispose() {
-    errorSubscription.cancel();
+    errorSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isRunning =
-        watchX((TheViewModel x) => x.updateWeatherCommand.isExecuting);
-    final updateButtonEnbaled =
-        watchX((TheViewModel x) => x.updateWeatherCommand.canExecute);
-    final switchValue = watchX((TheViewModel x) => x.setExecutionStateCommand);
+    final isRunning = watchX((WeatherManager x) => x.updateWeatherCommand.isExecuting);
+    final updateButtonEnbaled = watchX((WeatherManager x) => x.updateWeatherCommand.canExecute);
+    final switchValue = watchX((WeatherManager x) => x.setExecutionStateCommand);
 
     return Scaffold(
       appBar: AppBar(title: Text("WeatherDemo")),
@@ -60,7 +54,7 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
                 fontSize: 20.0,
                 color: Color.fromARGB(255, 0, 0, 0),
               ),
-              onChanged: get<TheViewModel>().textChangedCommand,
+              onChanged: get<WeatherManager>().textChangedCommand,
             ),
           ),
           Expanded(
@@ -86,18 +80,16 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
             child: Row(
               children: <Widget>[
                 Expanded(
-                  child: RaisedButton(
+                  child: ElevatedButton(
                     child: Text("Update"),
-                    color: Color.fromARGB(255, 33, 150, 243),
-                    textColor: Color.fromARGB(255, 255, 255, 255),
-                    onPressed: updateButtonEnbaled
-                        ? get<TheViewModel>().updateWeatherCommand
-                        : null,
+                    style: ElevatedButton.styleFrom(
+                        primary: Color.fromARGB(255, 33, 150, 243), onPrimary: Color.fromARGB(255, 255, 255, 255)),
+                    onPressed: updateButtonEnbaled ? get<WeatherManager>().updateWeatherCommand.call : null,
                   ),
                 ),
                 Switch(
                   value: switchValue,
-                  onChanged: get<TheViewModel>().setExecutionStateCommand,
+                  onChanged: get<WeatherManager>().setExecutionStateCommand,
                 ),
               ],
             ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_weather_demo/the_viewmodel.dart';
+import 'package:flutter_weather_demo/weather_manager.dart';
 import 'package:get_it/get_it.dart';
 
 import 'homepage.dart';
@@ -20,5 +20,5 @@ class MyApp extends StatelessWidget {
 }
 
 void registerViewModel() {
-  GetIt.I.registerSingleton<TheViewModel>(TheViewModel());
+  GetIt.I.registerSingleton<WeatherManager>(WeatherManager());
 }

@@ -1,7 +1,6 @@
 part of 'mixin.dart';
 
-class _WatchEntry<TObservedObject, TValue>
-    extends LinkedListEntry<_WatchEntry<Object, Object>> {
+class _WatchEntry<TObservedObject, TValue> extends LinkedListEntry<_WatchEntry<Object, Object?>> {
   TObservedObject observedObject;
   Function? notificationHandler;
   StreamSubscription? subscription;
@@ -13,8 +12,7 @@ class _WatchEntry<TObservedObject, TValue>
   _WatchEntry(
       {this.notificationHandler,
       this.subscription,
-      required void Function(_WatchEntry<TObservedObject, TValue> entry)
-          dispose,
+      required void Function(_WatchEntry<TObservedObject, TValue> entry) dispose,
       this.lastValue,
       this.selector,
       required this.observedObject})
@@ -47,7 +45,7 @@ class _WatchEntry<TObservedObject, TValue>
 class _MixinState {
   Element? _element;
 
-  LinkedList<_WatchEntry> _watchList = LinkedList<_WatchEntry>();
+  final _watchList = LinkedList<_WatchEntry<Object, Object?>>();
   _WatchEntry? currentWatch;
 
   void init(Element element) {
@@ -72,7 +70,7 @@ class _MixinState {
 
   /// We don't allow multiple watches on the same object but we allow multiple handler
   /// that can be registered to the same observable object
-  void _appendWatch(_WatchEntry entry, {bool allowMultipleSubcribers = false}) {
+  void _appendWatch<T extends Object, V>(_WatchEntry<T, V> entry, {bool allowMultipleSubcribers = false}) {
     if (!allowMultipleSubcribers) {
       for (final watch in _watchList) {
         if (watch.watchesTheSame(entry)) {
@@ -85,8 +83,8 @@ class _MixinState {
   }
 
   T watch<T extends Listenable>({String? instanceName}) {
-    final T listenable = GetIt.I<T>(instanceName: instanceName!);
-    var watch = _getWatch<T>();
+    final T listenable = GetIt.I<T>(instanceName: instanceName);
+    var watch = _getWatch<T>() as _WatchEntry<T, T>?;
 
     if (watch != null) {
       if (listenable == watch.observedObject) {
@@ -119,17 +117,15 @@ class _MixinState {
   /// [handler] and [executeImmediately] are used by [registerHandler]
   R watchX<T extends Object, R>(
     ValueListenable<R> Function(T) select, {
-    void Function(BuildContext contex, R newValue, void Function() dispose)?
-        handler,
+    void Function(BuildContext contex, R newValue, void Function() dispose)? handler,
     bool executeImmediately = false,
     String? instanceName,
   }) {
-    assert(select != null, 'select can\'t be null if you use watchX');
-    final parentObject = GetIt.I<T>(instanceName: instanceName!);
+    final parentObject = GetIt.I<T>(instanceName: instanceName);
     final listenable = select(parentObject);
     assert(listenable != null, 'select returned null in watchX');
 
-    _WatchEntry? watch = _getWatch();
+    var watch = _getWatch() as _WatchEntry<ValueListenable<R>, R?>?;
 
     if (watch != null) {
       if (listenable == watch.observedObject) {
@@ -140,7 +136,7 @@ class _MixinState {
         watch.dispose();
       }
     } else {
-      watch = _WatchEntry<ValueListenable<R>, R>(
+      watch = _WatchEntry<ValueListenable<R>, R?>(
         observedObject: listenable,
         dispose: (x) => x.observedObject.removeListener(
           x.notificationHandler as void Function(),
@@ -169,9 +165,10 @@ class _MixinState {
     String? instanceName,
   }) {
     assert(only != null, 'only can\'t be null if you use watchOnly');
-    final T parentObject = GetIt.I<T>(instanceName: instanceName!);
+    final T parentObject = GetIt.I<T>(instanceName: instanceName);
 
-    _WatchEntry? watch = _getWatch();
+    var watch = _getWatch() as _WatchEntry<T, R>?;
+
     if (watch != null) {
       if (parentObject == watch.observedObject) {
         return only(parentObject);
@@ -186,9 +183,8 @@ class _MixinState {
           observedObject: parentObject,
           selector: only,
           lastValue: onlyTarget,
-          dispose: (x) => x.observedObject
-              .removeListener(x.notificationHandler as void Function()));
-      _appendWatch(watch);
+          dispose: (x) => x.observedObject.removeListener(x.notificationHandler as void Function()));
+      _appendWatch(watch, allowMultipleSubcribers: true);
       // we have to set `allowMultipleSubcribers=true` because we can't differentiate
       // one selector function from another.
     }
@@ -206,22 +202,22 @@ class _MixinState {
     return only(parentObject);
   }
 
-  R watchXOnly<T, Q extends Listenable, R>(
-    Q? Function(T) select,
+  R watchXOnly<T extends Object, Q extends Listenable, R>(
+    Q Function(T) select,
     R Function(Q) only, {
     String? instanceName,
   }) {
     assert(only != null, 'only can\'t be null if you use watchXOnly');
     assert(select != null, 'select can\'t be null if you use watchXOnly');
-    final T parentObject = GetIt.I<T>(instanceName: instanceName!);
-    final Q? listenable = select(parentObject);
+    final T parentObject = GetIt.I.call<T>(instanceName: instanceName);
+    final Q listenable = select(parentObject);
     assert(listenable != null, 'watchXOnly: select must return a Listenable');
 
-    _WatchEntry? watch = _getWatch();
+    var watch = _getWatch() as _WatchEntry<Q, R>?;
 
     if (watch != null) {
       if (listenable == watch.observedObject) {
-        return only(listenable!);
+        return only(listenable);
       } else {
         /// select returned a different value than the last time
         /// so we have to unregister out handler and subscribe anew
@@ -229,18 +225,17 @@ class _MixinState {
       }
     } else {
       watch = _WatchEntry<Q, R>(
-          observedObject: listenable!,
+          observedObject: listenable,
           lastValue: only(listenable),
           selector: only,
-          dispose: (x) => x.observedObject
-              ?.removeListener(x.notificationHandler as void Function()));
-      _appendWatch(watch);
+          dispose: (x) => x.observedObject.removeListener(x.notificationHandler as void Function()));
+      _appendWatch(watch, allowMultipleSubcribers: true);
       // we have to set `allowMultipleSubcribers=true` because we can't differentiate
       // one selector function from another.
     }
 
     final handler = () {
-      final newValue = only(listenable!);
+      final newValue = only(listenable);
       if (watch!.lastValue != newValue) {
         _element!.markNeedsBuild();
         watch.lastValue = newValue;
@@ -250,40 +245,43 @@ class _MixinState {
     watch.observedObject = listenable;
     watch.notificationHandler = handler;
 
-    listenable!.addListener(handler);
+    listenable.addListener(handler);
     return only(listenable);
   }
 
-  AsyncSnapshot<R> watchStream<T, R>(
+  AsyncSnapshot<R> watchStream<T extends Object, R>(
     Stream<R> Function(T) select,
     R? initialValue, {
     String? instanceName,
     bool preserveState = true,
-    void Function(BuildContext? context, AsyncSnapshot<R> snapshot,
-            void Function() cancel)?
-        handler,
+    void Function(BuildContext context, AsyncSnapshot<R> snapshot, void Function() cancel)? handler,
   }) {
     assert(select != null, 'select can\'t be null if you use watchStream');
-    final T parentObject = GetIt.I<T>(instanceName: instanceName!);
+    final T parentObject = GetIt.I<T>(instanceName: instanceName);
     final stream = select(parentObject);
     assert(stream != null, 'select returned null in watchX');
 
-    _WatchEntry? watch = _getWatch();
+    var watch = _getWatch() as _WatchEntry<Stream<R>, AsyncSnapshot<R?>>?;
 
     if (watch != null) {
       if (stream == watch.observedObject) {
+        /// Only if this isn't used to register a handler
         ///  still the same stream so we can directly return lastvalue
-        return watch.lastValue;
+        if (handler == null) {
+          assert(watch.lastValue != null);
+          return AsyncSnapshot<R>.withData(watch.lastValue!.connectionState, watch.lastValue!.data!);
+        } else {
+          return AsyncSnapshot.nothing();
+        }
       } else {
         /// select returned a different value than the last time
         /// so we have to unregister out handler and subscribe anew
         watch.dispose();
-        initialValue =
-            preserveState ? watch.lastValue ?? initialValue : initialValue;
+        initialValue = preserveState ? watch.lastValue!.data ?? initialValue : initialValue;
       }
     } else {
-      watch = _WatchEntry<Stream<R>, AsyncSnapshot<R>>(
-          dispose: (x) => x.subscription!.cancel(), observedObject: stream);
+      watch =
+          _WatchEntry<Stream<R>, AsyncSnapshot<R?>>(dispose: (x) => x.subscription!.cancel(), observedObject: stream);
       _appendWatch(watch, allowMultipleSubcribers: handler != null);
     }
 
@@ -291,42 +289,36 @@ class _MixinState {
     final subscription = stream.listen(
       (x) {
         if (handler != null) {
-          handler(_element, AsyncSnapshot.withData(ConnectionState.active, x),
-              watch!.dispose);
+          handler(_element!, AsyncSnapshot.withData(ConnectionState.active, x), watch!.dispose);
         }
         watch!.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
         _element!.markNeedsBuild();
       },
       onError: (error) {
         if (handler != null) {
-          handler(
-              _element,
-              AsyncSnapshot.withError(ConnectionState.active, error),
-              watch!.dispose);
+          handler(_element!, AsyncSnapshot.withError(ConnectionState.active, error), watch!.dispose);
         }
-        watch!.lastValue =
-            AsyncSnapshot.withError(ConnectionState.active, error);
+        watch!.lastValue = AsyncSnapshot.withError(ConnectionState.active, error);
         _element!.markNeedsBuild();
       },
     );
     watch.subscription = subscription;
     watch.observedObject = stream;
-    watch.lastValue =
-        AsyncSnapshot<R?>.withData(ConnectionState.waiting, initialValue);
+    watch.lastValue = AsyncSnapshot<R?>.withData(ConnectionState.waiting, initialValue);
 
-    if (handler != null && initialValue != null) {
-      handler(
-          _element,
-          AsyncSnapshot.withData(ConnectionState.waiting, initialValue),
-          watch.dispose);
+    if (handler != null) {
+      if (initialValue != null) {
+        handler(_element!, AsyncSnapshot.withData(ConnectionState.waiting, initialValue), watch.dispose);
+      }
+      return AsyncSnapshot.nothing();
     }
-    return watch.lastValue;
+    assert(watch.lastValue != null);
+    return AsyncSnapshot<R>.withData(watch.lastValue!.connectionState, watch.lastValue!.data!);
   }
 
   void registerHandler<T extends Object, R>(
     ValueListenable<R> Function(T) select,
-    void Function(BuildContext contex, R newValue, void Function() dispose)
-        handler, {
+    void Function(BuildContext contex, R newValue, void Function() dispose) handler, {
     bool executeImmediately = false,
     String? instanceName,
   }) {
@@ -335,20 +327,17 @@ class _MixinState {
         select != null,
         'select can\'t be null if you use registerHandler '
         'if you want target directly pass (x)=>x');
-    final T parentObject = GetIt.I<T>(instanceName: instanceName!);
+    final T parentObject = GetIt.I<T>(instanceName: instanceName);
     final listenable = select(parentObject);
     assert(listenable != null, 'select returned null in registerHandler');
 
-    watchX<T, R>(select,
-        handler: handler,
-        executeImmediately: executeImmediately,
-        instanceName: instanceName);
+    watchX<T, R>(select, handler: handler, executeImmediately: executeImmediately, instanceName: instanceName);
   }
 
-  void registerStreamHandler<T, R>(
+  void registerStreamHandler<T extends Object, R>(
     Stream<R> Function(T) select,
     void Function(
-      BuildContext? context,
+      BuildContext context,
       AsyncSnapshot<R> snapshot,
       void Function() cancel,
     )
@@ -361,12 +350,10 @@ class _MixinState {
         select != null,
         'select can\'t be null if you use registerStreamHandler '
         'if you want target directly pass (x)=>x');
-    final T parentObject = GetIt.I<T>(instanceName: instanceName!);
-    assert(select(parentObject) != null,
-        'select returned null in registerStreamHandler');
+    final T parentObject = GetIt.I<T>(instanceName: instanceName);
+    assert(select(parentObject) != null, 'select returned null in registerStreamHandler');
 
-    watchStream<T, R>(select, initialValue,
-        instanceName: instanceName, handler: handler);
+    watchStream<T, R>(select, initialValue, instanceName: instanceName, handler: handler);
   }
 
   /// this function is used to implement several others
@@ -382,11 +369,9 @@ class _MixinState {
   /// [futureProvider] overrides a looked up future. Used to implement [allReady]
   /// We use prover functions here so that [registerFutureHandler] ensure
   /// that they are only called once.
-  AsyncSnapshot<R?> registerFutureHandler<T, R>(
+  AsyncSnapshot<R?> registerFutureHandler<T extends Object, R>(
     Future<R> Function(T)? select,
-    void Function(BuildContext? context, AsyncSnapshot<R?>? snapshot,
-            void Function() cancel)?
-        handler, {
+    void Function(BuildContext context, AsyncSnapshot<R?> snapshot, void Function() cancel)? handler, {
     required bool allowMultipleSubscribers,
     R Function()? initialValueProvider,
     bool preserveState = true,
@@ -399,13 +384,12 @@ class _MixinState {
         'select can\'t be null if you use ${handler != null ? 'registerFutureHandler' : 'watchFuture'} '
         'if you want target directly pass (x)=>x');
 
-    _WatchEntry<Future<R>?, AsyncSnapshot<R?>?>? watch =
-        _getWatch() as _WatchEntry<Future<R>?, AsyncSnapshot<R>?>?;
+    var watch = _getWatch() as _WatchEntry<Future<R>, AsyncSnapshot<R?>>?;
 
     Future<R>? _future;
     if (futureProvider == null) {
       /// so we use [select] to get our Future
-      final T parentObject = GetIt.I<T>(instanceName: instanceName!);
+      final T parentObject = GetIt.I<T>(instanceName: instanceName);
       _future = select!.call(parentObject);
       assert(_future != null, 'select returned null in registerFutureHandler');
     }
@@ -418,7 +402,7 @@ class _MixinState {
         /// returned Future
         /// and call the Handler again as the state hasn't changed
         if (handler != null && watch.observedObject != null) {
-          handler(_element, watch.lastValue, watch.dispose);
+          handler(_element!, watch.lastValue!, watch.dispose);
         }
 
         return watch.lastValue!;
@@ -434,55 +418,53 @@ class _MixinState {
       /// In case futureProvider != null
       _future ??= futureProvider!();
 
-      watch = _WatchEntry<Future<R>?, AsyncSnapshot<R>>(
-          observedObject: _future,
-          dispose: (x) => x.activeCallbackIdentity = null);
+      watch = _WatchEntry<Future<R>, AsyncSnapshot<R?>>(
+          observedObject: _future, dispose: (x) => x.activeCallbackIdentity = null);
       _appendWatch(watch, allowMultipleSubcribers: allowMultipleSubscribers);
     }
 
     /// in case of a new watch or an changing Future we do the following:
-    watch.observedObject = _future;
+    watch.observedObject = _future!;
 
     /// by using a local variable we ensure that only the value and not the
     /// variable is captured.
     final callbackIdentity = Object();
     watch.activeCallbackIdentity = callbackIdentity;
-    _future!.then(
+    _future.then(
       (x) {
         if (watch!.activeCallbackIdentity == callbackIdentity) {
           // print('Future completed $x');
           // only update if Future is still valid
           watch.lastValue = AsyncSnapshot.withData(ConnectionState.done, x);
-          handler!(_element, watch.lastValue, watch.dispose);
+          handler!(_element!, watch.lastValue!, watch.dispose);
         }
       },
       onError: (error) {
         if (watch!.activeCallbackIdentity == callbackIdentity) {
           // print('Future error');
-          watch.lastValue =
-              AsyncSnapshot.withError(ConnectionState.done, error);
-          handler!(_element, watch.lastValue, watch.dispose);
+          watch.lastValue = AsyncSnapshot.withError(ConnectionState.done, error);
+          handler!(_element!, watch.lastValue!, watch.dispose);
         }
       },
     );
 
-    watch.lastValue = AsyncSnapshot<R?>.withData(
-        ConnectionState.waiting, _initialValue ?? initialValueProvider?.call());
+    watch.lastValue =
+        AsyncSnapshot<R?>.withData(ConnectionState.waiting, _initialValue ?? initialValueProvider?.call());
     if (executeImmediately) {
-      handler!(_element, watch.lastValue, watch.dispose);
+      handler!(_element!, watch.lastValue!, watch.dispose);
     }
 
     return watch.lastValue!;
   }
 
   bool allReady(
-      {void Function(BuildContext? context)? onReady,
-      void Function(BuildContext? context, Object? error)? onError,
+      {void Function(BuildContext context)? onReady,
+      void Function(BuildContext context, Object? error)? onError,
       Duration? timeout}) {
-    return registerFutureHandler<void, bool>(
+    return registerFutureHandler<Object, bool>(
       null,
       (context, x, dispose) {
-        if (x!.hasError) {
+        if (x.hasError) {
           onError?.call(context, x.error);
         } else {
           onReady?.call(context);
@@ -495,18 +477,17 @@ class _MixinState {
 
       /// as `GetIt.allReady` returns a Future<void> we convert it
       /// to a bool because if this Future completes the meaning is true.
-      futureProvider: () =>
-          GetIt.I.allReady(timeout: timeout).then((_) => true),
+      futureProvider: () => GetIt.I.allReady(timeout: timeout).then((_) => true),
     ).data!;
   }
 
   bool isReady<T extends Object>(
-      {void Function(BuildContext? context)? onReady,
-      void Function(BuildContext? context, Object? error)? onError,
+      {void Function(BuildContext context)? onReady,
+      void Function(BuildContext context, Object? error)? onError,
       Duration? timeout,
       String? instanceName}) {
-    return registerFutureHandler<void, bool>(null, (context, x, cancel) {
-      if (x!.hasError) {
+    return registerFutureHandler<Object, bool>(null, (context, x, cancel) {
+      if (x.hasError) {
         onError?.call(context, x.error);
       } else {
         onReady?.call(context);
@@ -515,14 +496,11 @@ class _MixinState {
       cancel(); // we want exactly one call.
     },
         allowMultipleSubscribers: false,
-        initialValueProvider: () =>
-            GetIt.I.isReadySync<T>(instanceName: instanceName),
+        initialValueProvider: () => GetIt.I.isReadySync<T>(instanceName: instanceName),
 
         /// as `GetIt.allReady` returns a Future<void> we convert it
         /// to a bool because if this Future completes the meaning is true.
-        futureProvider: () => GetIt.I
-            .isReady<T>(instanceName: instanceName, timeout: timeout)
-            .then((_) => true)).data!;
+        futureProvider: () => GetIt.I.isReady<T>(instanceName: instanceName, timeout: timeout).then((_) => true)).data!;
   }
 
   bool _scopeWasPushed = false;

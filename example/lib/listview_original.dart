@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_weather_demo/the_viewmodel.dart';
+import 'package:flutter_weather_demo/weather_manager.dart';
 import 'package:get_it_mixin/get_it_mixin.dart';
 
 class WeatherListView extends StatelessWidget with GetItMixin {
@@ -7,29 +7,29 @@ class WeatherListView extends StatelessWidget with GetItMixin {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<List<WeatherEntry>>(
-      valueListenable: getX((TheViewModel x) => x.updateWeatherCommand),
+      valueListenable: getX((WeatherManager x) => x.updateWeatherCommand),
       builder: (BuildContext context, List<WeatherEntry> data, _) {
         return ListView.builder(
           itemCount: data.length,
           itemBuilder: (BuildContext context, int index) => ListTile(
             title: Text(data[index].cityName),
-            subtitle: Text(data[index].description),
-            leading: Image.network(
-              data[index].iconURL,
-              frameBuilder: (BuildContext context, Widget child, int frame,
-                  bool wasSynchronouslyLoaded) {
-                return child;
-              },
-              loadingBuilder: (BuildContext context, Widget child,
-                  ImageChunkEvent loadingProgress) {
-                if (loadingProgress == null) return child;
-                return CircularProgressIndicator();
-              },
-              errorBuilder: (context, error, stackTrace) => Icon(
-                Icons.error,
-                size: 40,
-              ),
-            ),
+            subtitle: Text(data[index].description ?? ''),
+            leading: data[index].iconURL != null
+                ? Image.network(
+                    data[index].iconURL!,
+                    frameBuilder: (BuildContext context, Widget child, int? frame, bool wasSynchronouslyLoaded) {
+                      return child;
+                    },
+                    loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return CircularProgressIndicator();
+                    },
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.error,
+                      size: 40,
+                    ),
+                  )
+                : SizedBox(),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
