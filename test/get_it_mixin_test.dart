@@ -1,3 +1,4 @@
+// ignore_for_file: unused_local_variable
 // ignore_for_file: invalid_use_of_protected_member
 import 'dart:async';
 
@@ -25,6 +26,7 @@ class Model extends ChangeNotifier {
   String? get country2 => _country2;
   final ValueNotifier<String>? name;
   final Model? nestedModel;
+  // ignore: close_sinks
   final StreamController<String> streamController = StreamController<String>.broadcast();
 
   Model({this.constantValue, String? country, this.name, this.nestedModel, String? country2})

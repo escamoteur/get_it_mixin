@@ -123,7 +123,6 @@ class _MixinState {
   }) {
     final parentObject = GetIt.I<T>(instanceName: instanceName);
     final listenable = select(parentObject);
-    assert(listenable != null, 'select returned null in watchX');
 
     var watch = _getWatch() as _WatchEntry<ValueListenable<R>, R?>?;
 
@@ -164,7 +163,6 @@ class _MixinState {
     R Function(T) only, {
     String? instanceName,
   }) {
-    assert(only != null, 'only can\'t be null if you use watchOnly');
     final T parentObject = GetIt.I<T>(instanceName: instanceName);
 
     var watch = _getWatch() as _WatchEntry<T, R>?;
@@ -207,11 +205,8 @@ class _MixinState {
     R Function(Q) only, {
     String? instanceName,
   }) {
-    assert(only != null, 'only can\'t be null if you use watchXOnly');
-    assert(select != null, 'select can\'t be null if you use watchXOnly');
     final T parentObject = GetIt.I.call<T>(instanceName: instanceName);
     final Q listenable = select(parentObject);
-    assert(listenable != null, 'watchXOnly: select must return a Listenable');
 
     var watch = _getWatch() as _WatchEntry<Q, R>?;
 
@@ -256,10 +251,8 @@ class _MixinState {
     bool preserveState = true,
     void Function(BuildContext context, AsyncSnapshot<R> snapshot, void Function() cancel)? handler,
   }) {
-    assert(select != null, 'select can\'t be null if you use watchStream');
     final T parentObject = GetIt.I<T>(instanceName: instanceName);
     final stream = select(parentObject);
-    assert(stream != null, 'select returned null in watchX');
 
     var watch = _getWatch() as _WatchEntry<Stream<R>, AsyncSnapshot<R?>>?;
 
@@ -322,15 +315,6 @@ class _MixinState {
     bool executeImmediately = false,
     String? instanceName,
   }) {
-    assert(handler != null, 'handler can\'t be null for registerHandler');
-    assert(
-        select != null,
-        'select can\'t be null if you use registerHandler '
-        'if you want target directly pass (x)=>x');
-    final T parentObject = GetIt.I<T>(instanceName: instanceName);
-    final listenable = select(parentObject);
-    assert(listenable != null, 'select returned null in registerHandler');
-
     watchX<T, R>(select, handler: handler, executeImmediately: executeImmediately, instanceName: instanceName);
   }
 
@@ -345,14 +329,6 @@ class _MixinState {
     R? initialValue,
     String? instanceName,
   }) {
-    assert(handler != null, 'handler can\'t be null for registerStreamHandler');
-    assert(
-        select != null,
-        'select can\'t be null if you use registerStreamHandler '
-        'if you want target directly pass (x)=>x');
-    final T parentObject = GetIt.I<T>(instanceName: instanceName);
-    assert(select(parentObject) != null, 'select returned null in registerStreamHandler');
-
     watchStream<T, R>(select, initialValue, instanceName: instanceName, handler: handler);
   }
 
@@ -391,7 +367,6 @@ class _MixinState {
       /// so we use [select] to get our Future
       final T parentObject = GetIt.I<T>(instanceName: instanceName);
       _future = select!.call(parentObject);
-      assert(_future != null, 'select returned null in registerFutureHandler');
     }
 
     R? _initialValue;
@@ -401,7 +376,7 @@ class _MixinState {
         /// in case that we got a futureProvider we always keep the first
         /// returned Future
         /// and call the Handler again as the state hasn't changed
-        if (handler != null && watch.observedObject != null) {
+        if (handler != null) {
           handler(_element!, watch.lastValue!, watch.dispose);
         }
 
