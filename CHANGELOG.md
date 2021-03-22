@@ -1,3 +1,7 @@
+## [2.0.1] - 22.03.201
+
+* Added option to watch any ValueListenable with `watch(target:)`
+
 ## [2.0.0] - 04.03.201
 
 * Null safety migration

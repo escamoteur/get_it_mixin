@@ -26,12 +26,15 @@ mixin GetItMixin on StatelessWidget {
   /// function used for this type or based on a name.
   /// for factories you can pass up to 2 parameters [param1,param2] they have to match the types
   /// given at registration with [registerFactoryParam()]
-  T get<T extends Object>({String? instanceName, dynamic param1, dynamic param2}) =>
+  T get<T extends Object>(
+          {String? instanceName, dynamic param1, dynamic param2}) =>
       GetIt.I<T>(instanceName: instanceName, param1: param1, param2: param2);
 
   /// like [get] but for async registrations
-  Future<T> getAsync<T extends Object>({String? instanceName, dynamic param1, dynamic param2}) =>
-      GetIt.I.getAsync<T>(instanceName: instanceName, param1: param1, param2: param2);
+  Future<T> getAsync<T extends Object>(
+          {String? instanceName, dynamic param1, dynamic param2}) =>
+      GetIt.I.getAsync<T>(
+          instanceName: instanceName, param1: param1, param2: param2);
 
   /// like [get] but with an additional [select] function to return a member of [T]
   R getX<T extends Object, R>(R Function(T) accessor, {String? instanceName}) {
@@ -41,8 +44,10 @@ mixin GetItMixin on StatelessWidget {
   /// To observe `ValueListenables`
   /// like [get] but it also registers a listener to [T] and
   /// triggers a rebuild every time [T].value changes
-  R watch<T extends ValueListenable<R>, R>({String? instanceName}) =>
-      _state.value.watch<T>(instanceName: instanceName).value;
+  /// If [target] is not null whatch will observe this Object instead of
+  /// looking inside GetIt
+  R watch<T extends ValueListenable<R>, R>({T? target, String? instanceName}) =>
+      _state.value.watch<T>(target: target, instanceName: instanceName).value;
 
   /// like watch but it only triggers a rebuild when the value of
   /// the `ValueListenable`, that the function [select] returns changes
@@ -70,7 +75,8 @@ mixin GetItMixin on StatelessWidget {
     R Function(Q listenable) only, {
     String? instanceName,
   }) =>
-      _state.value.watchXOnly<T, Q, R>(select, only, instanceName: instanceName);
+      _state.value
+          .watchXOnly<T, Q, R>(select, only, instanceName: instanceName);
 
   /// subscribes to the `Stream` returned by [select] and returns
   /// an `AsyncSnapshot` with the latest received data from the `Stream`
@@ -89,7 +95,8 @@ mixin GetItMixin on StatelessWidget {
     String? instanceName,
     bool preserveState = true,
   }) =>
-      _state.value.watchStream<T, R>(select, initialValue, instanceName: instanceName, preserveState: preserveState);
+      _state.value.watchStream<T, R>(select, initialValue,
+          instanceName: instanceName, preserveState: preserveState);
 
   /// awaits the ` Future` returned by [select] and triggers a rebuild as soon
   /// as the `Future` completes. After that it returns
@@ -110,7 +117,8 @@ mixin GetItMixin on StatelessWidget {
     String? instanceName,
     bool preserveState = true,
   }) =>
-      _state.value.registerFutureHandler<T, R>(select, (context, x, cancel) => (context as Element).markNeedsBuild(),
+      _state.value.registerFutureHandler<T, R>(
+          select, (context, x, cancel) => (context as Element).markNeedsBuild(),
           initialValueProvider: () => initialValue,
           instanceName: instanceName,
           preserveState: preserveState,
@@ -126,22 +134,24 @@ mixin GetItMixin on StatelessWidget {
   /// from inside the handler.
   void registerHandler<T extends Object, R>(
     ValueListenable<R> Function(T) select,
-    void Function(BuildContext context, R newValue, void Function() cancel) handler, {
+    void Function(BuildContext context, R newValue, void Function() cancel)
+        handler, {
     bool executeImmediately = false,
     String? instanceName,
   }) =>
-      _state.value
-          .registerHandler<T, R>(select, handler, instanceName: instanceName, executeImmediately: executeImmediately);
+      _state.value.registerHandler<T, R>(select, handler,
+          instanceName: instanceName, executeImmediately: executeImmediately);
 
   @Deprecated('renamed to registerHandler')
   void registerValueListenableHandler<T extends Object, R>(
     ValueListenable<R> Function(T) select,
-    void Function(BuildContext context, R newValue, void Function() cancel) handler, {
+    void Function(BuildContext context, R newValue, void Function() cancel)
+        handler, {
     bool executeImmediately = false,
     String? instanceName,
   }) =>
-      _state.value
-          .registerHandler<T, R>(select, handler, instanceName: instanceName, executeImmediately: executeImmediately);
+      _state.value.registerHandler<T, R>(select, handler,
+          instanceName: instanceName, executeImmediately: executeImmediately);
 
   /// registers a [handler] for a `Stream` exactly once on the first build
   /// and unregisters is when the widget is destroyed.
@@ -153,12 +163,14 @@ mixin GetItMixin on StatelessWidget {
   /// from inside the handler.
   void registerStreamHandler<T extends Object, R>(
     Stream<R?> Function(T) select,
-    void Function(BuildContext context, AsyncSnapshot<R?> newValue, void Function() cancel) handler, {
+    void Function(BuildContext context, AsyncSnapshot<R?> newValue,
+            void Function() cancel)
+        handler, {
     R? initialValue,
     String? instanceName,
   }) =>
-      _state.value
-          .registerStreamHandler<T, R?>(select, handler, initialValue: initialValue, instanceName: instanceName);
+      _state.value.registerStreamHandler<T, R?>(select, handler,
+          initialValue: initialValue, instanceName: instanceName);
 
   /// registers a [handler] for a `Future` exactly once on the first build
   /// and unregisters is when the widget is destroyed.
@@ -173,12 +185,16 @@ mixin GetItMixin on StatelessWidget {
   /// the handler calls `cancel` or the widget is destroyed
   void registerFutureHandler<T extends Object, R>(
     Future<R> Function(T) select,
-    void Function(BuildContext context, AsyncSnapshot<R?> newValue, void Function() cancel) handler, {
+    void Function(BuildContext context, AsyncSnapshot<R?> newValue,
+            void Function() cancel)
+        handler, {
     R? initialValue,
     String? instanceName,
   }) {
     _state.value.registerFutureHandler<T, R?>(select, handler,
-        initialValueProvider: () => initialValue, instanceName: instanceName, allowMultipleSubscribers: true);
+        initialValueProvider: () => initialValue,
+        instanceName: instanceName,
+        allowMultipleSubscribers: true);
   }
 
   /// returns `true` if all registered async or dependent objects are ready
@@ -190,7 +206,8 @@ mixin GetItMixin on StatelessWidget {
           {void Function(BuildContext context)? onReady,
           void Function(BuildContext context, Object? error)? onError,
           Duration? timeout}) =>
-      _state.value.allReady(onReady: onReady, onError: onError, timeout: timeout);
+      _state.value
+          .allReady(onReady: onReady, onError: onError, timeout: timeout);
 
   /// returns `true` if the registered async or dependent object defined by [T] and
   /// [instanceName] is ready
@@ -203,7 +220,11 @@ mixin GetItMixin on StatelessWidget {
           void Function(BuildContext context, Object? error)? onError,
           Duration? timeout,
           String? instanceName}) =>
-      _state.value.isReady<T>(instanceName: instanceName, onReady: onReady, onError: onError, timeout: timeout);
+      _state.value.isReady<T>(
+          instanceName: instanceName,
+          onReady: onReady,
+          onError: onError,
+          timeout: timeout);
 
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
   /// objects that should only exist as long as this scope exists.
@@ -214,7 +235,8 @@ mixin GetItMixin on StatelessWidget {
   /// an async disposal function, that functions won't be awaited.
   /// I would recommend doing pushing and popping from your business layer but sometimes
   /// this might come in handy
-  void pushScope({void Function(GetIt getIt)? init, void Function()? dispose}) =>
+  void pushScope(
+          {void Function(GetIt getIt)? init, void Function()? dispose}) =>
       _state.value.pushScope(init: init, dispose: dispose);
 }
 
@@ -225,7 +247,8 @@ mixin GetItStatefulWidgetMixin on StatefulWidget {
   StatefulElement createElement() => _StatefulMixInElement(this);
 }
 
-mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> {
+mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin>
+    on State<TState> {
   /// this is an ugly hack so that you don't get a warning in the statefulwidget
   /// all the following functions can be called inside the build function but also
   /// the mixin takes care that everything is correctly disposed.
@@ -234,12 +257,15 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> 
   /// function used for this type or based on a name.
   /// for factories you can pass up to 2 parameters [param1,param2] they have to match the types
   /// given at registration with [registerfactoryparam()]
-  T get<T extends Object>({String? instanceName, dynamic param1, dynamic param2}) =>
+  T get<T extends Object>(
+          {String? instanceName, dynamic param1, dynamic param2}) =>
       GetIt.I<T>(instanceName: instanceName, param1: param1, param2: param2);
 
   /// like [get] but for async registrations
-  Future<T> getAsync<T extends Object>({String? instanceName, dynamic param1, dynamic param2}) =>
-      GetIt.I.getAsync<T>(instanceName: instanceName, param1: param1, param2: param2);
+  Future<T> getAsync<T extends Object>(
+          {String? instanceName, dynamic param1, dynamic param2}) =>
+      GetIt.I.getAsync<T>(
+          instanceName: instanceName, param1: param1, param2: param2);
 
   /// like [get] but with an additional [select] function to return a member of [T]
   R getX<T extends Object, R>(R Function(T?) accessor, {String? instanceName}) {
@@ -249,8 +275,12 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> 
   /// To observe `ValueListenables`
   /// like [get] but it also registers a listener to [T] and
   /// triggers a rebuild every time [T].value changes
-  R watch<T extends ValueListenable<R>, R>({String? instanceName}) =>
-      widget._state.value.watch<T>(instanceName: instanceName).value;
+  /// If [target] is not null whatch will observe this Object instead of
+  /// looking inside GetIt
+  R watch<T extends ValueListenable<R>, R>({T? target, String? instanceName}) =>
+      widget._state.value
+          .watch<T>(target: target, instanceName: instanceName)
+          .value;
 
   /// like watch but it only triggers a rebuild when the value of
   /// the `ValueListenable`, that the function [select] returns changes
@@ -278,7 +308,8 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> 
     R Function(Q listenable) only, {
     String? instanceName,
   }) =>
-      widget._state.value.watchXOnly<T, Q, R>(select, only, instanceName: instanceName);
+      widget._state.value
+          .watchXOnly<T, Q, R>(select, only, instanceName: instanceName);
 
   /// subscribes to the `Stream` returned by [select] and returns
   /// an `AsyncSnapshot` with the latest received data from the `Stream`
@@ -297,8 +328,8 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> 
     String? instanceName,
     bool preserveState = true,
   }) =>
-      widget._state.value
-          .watchStream<T, R>(select, initialValue, instanceName: instanceName, preserveState: preserveState);
+      widget._state.value.watchStream<T, R>(select, initialValue,
+          instanceName: instanceName, preserveState: preserveState);
 
   /// awaits the ` Future` returned by [select] and triggers a rebuild as soon
   /// as the `Future` completes. After that it returns
@@ -336,22 +367,24 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> 
   /// from inside the handler.
   void registerHandler<T extends Object, R>(
     ValueListenable<R> Function(T) select,
-    void Function(BuildContext context, R newValue, void Function() cancel) handler, {
+    void Function(BuildContext context, R newValue, void Function() cancel)
+        handler, {
     bool executeImmediately = false,
     String? instanceName,
   }) =>
-      widget._state.value
-          .registerHandler<T, R>(select, handler, instanceName: instanceName, executeImmediately: executeImmediately);
+      widget._state.value.registerHandler<T, R>(select, handler,
+          instanceName: instanceName, executeImmediately: executeImmediately);
 
   @Deprecated('renamed to registerHandler')
   void registerValueListenableHandler<T extends Object, R>(
     ValueListenable<R> Function(T) select,
-    void Function(BuildContext context, R newValue, void Function() cancel) handler, {
+    void Function(BuildContext context, R newValue, void Function() cancel)
+        handler, {
     bool executeImmediately = false,
     String? instanceName,
   }) =>
-      widget._state.value
-          .registerHandler<T, R>(select, handler, instanceName: instanceName, executeImmediately: executeImmediately);
+      widget._state.value.registerHandler<T, R>(select, handler,
+          instanceName: instanceName, executeImmediately: executeImmediately);
 
   /// registers a [handler] for a `Stream` exactly once on the first build
   /// and unregisters is when the widget is destroyed.
@@ -364,12 +397,14 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> 
   /// from inside the handler.
   void registerStreamHandler<T extends Object, R>(
     Stream<R> Function(T) select,
-    void Function(BuildContext context, AsyncSnapshot<R> newValue, void Function() cancel) handler, {
+    void Function(BuildContext context, AsyncSnapshot<R> newValue,
+            void Function() cancel)
+        handler, {
     R? initialValue,
     String? instanceName,
   }) =>
-      widget._state.value
-          .registerStreamHandler<T, R>(select, handler, initialValue: initialValue, instanceName: instanceName);
+      widget._state.value.registerStreamHandler<T, R>(select, handler,
+          initialValue: initialValue, instanceName: instanceName);
 
   /// registers a [handler] for a `Future` exactly once on the first build
   /// and unregisters is when the widget is destroyed.
@@ -384,12 +419,16 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> 
   /// the handler calls `cancel` or the widget is destroyed
   void registerFutureHandler<T extends Object, R>(
     Future<R> Function(T) select,
-    void Function(BuildContext context, AsyncSnapshot<R?> newValue, void Function() cancel) handler, {
+    void Function(BuildContext context, AsyncSnapshot<R?> newValue,
+            void Function() cancel)
+        handler, {
     R? initialValue,
     String? instanceName,
   }) =>
       widget._state.value.registerFutureHandler<T, R?>(select, handler,
-          initialValueProvider: () => initialValue, instanceName: instanceName, allowMultipleSubscribers: true);
+          initialValueProvider: () => initialValue,
+          instanceName: instanceName,
+          allowMultipleSubscribers: true);
 
   /// returns `true` if all registered async or dependent objects are ready
   /// and call [onReady] [onError] handlers when the all-ready state is reached
@@ -400,7 +439,8 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> 
           {void Function(BuildContext context)? onReady,
           void Function(BuildContext context, Object? error)? onError,
           Duration? timeout}) =>
-      widget._state.value.allReady(onReady: onReady, onError: onError, timeout: timeout);
+      widget._state.value
+          .allReady(onReady: onReady, onError: onError, timeout: timeout);
 
   /// returns `true` if the registered async or dependent object defined by [T] and
   /// [instanceName] is ready
@@ -413,7 +453,11 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> 
           void Function(BuildContext context, Object? error)? onError,
           Duration? timeout,
           String? instanceName}) =>
-      widget._state.value.isReady<T>(instanceName: instanceName, onReady: onReady, onError: onError, timeout: timeout);
+      widget._state.value.isReady<T>(
+          instanceName: instanceName,
+          onReady: onReady,
+          onError: onError,
+          timeout: timeout);
 
   /// Pushes a new GetIt-Scope. After pushing it executes [init] where you can register
   /// objects that should only exist as long as this scope exists.
@@ -424,6 +468,7 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin> on State<TState> 
   /// an async disposal function, that functions won't be awaited.
   /// I would recommend doing pushing and popping from your business layer but sometimes
   /// this might come in handy
-  void pushScope({void Function(GetIt getIt)? init, void Function()? dispose}) =>
+  void pushScope(
+          {void Function(GetIt getIt)? init, void Function()? dispose}) =>
       widget._state.value.pushScope(init: init, dispose: dispose);
 }

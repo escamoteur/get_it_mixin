@@ -112,7 +112,9 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
 }
 ```
 
-Unfortunately we have to provide a second generic parameter because Dart can't infer the type of the return value. Luckily we will see with the following functions there is a way to help the compiler.
+Unfortunately we have to provide a second generic parameter because Dart can't infer the type of the return value.
+`watch` can not only observe `Valuelistenables` inside GetIt, you also can pass any Valuelistenable as `target` parameter. For instance a `ValueListenable` that was passed as parameter to the Widget. 
+Luckily we will see with the following functions there is a way to help the compiler.
 
 #### Rules!
 **Important: These functions can only be called inside the `build()` function and you can only watch any objects only once. The functions must be called on every `build`, in the same order, and cannot be called conditionally otherwise the mixin gets confused**
