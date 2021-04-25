@@ -1,8 +1,12 @@
-## [2.0.1] - 22.03.201
+## [2.0.2] - 25.04.2021
+
+* Switched internal structure from LinkedList to List because of  https://github.com/dart-lang/sdk/issues/45767 which made the package unusable on web
+
+## [2.0.1] - 22.03.2021
 
 * Added option to watch any ValueListenable with `watch(target:)`
 
-## [2.0.0] - 04.03.201
+## [2.0.0] - 04.03.2021
 
 * Null safety migration
 

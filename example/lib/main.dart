@@ -5,7 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'homepage.dart';
 
 void main() {
-  registerViewModel();
+  registerManager();
   runApp(MyApp());
 }
 
@@ -19,6 +19,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-void registerViewModel() {
+void registerManager() {
   GetIt.I.registerSingleton<WeatherManager>(WeatherManager());
 }

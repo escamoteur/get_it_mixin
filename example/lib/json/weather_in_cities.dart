@@ -64,7 +64,7 @@ class City {
         main: MainClass.fromJson(json["main"] ?? {} as Map<String, dynamic>),
         visibility: json["visibility"] ?? 0 as int,
         wind: Wind.fromJson(json["wind"] ?? [] as Map<String, dynamic>),
-        rain: json["rain"] ?? 0.0 as double,
+        rain: 0.0, //json["rain"] ?? 0.0 as double,
         snow: json["snow"] ?? 0.0 as double,
         clouds: Clouds.fromJson(json["clouds"] ?? {} as Map<String, dynamic>),
         weather: List<Weather>.from((json["weather"] ?? [] as List)

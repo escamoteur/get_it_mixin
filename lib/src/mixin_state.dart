@@ -1,7 +1,6 @@
 part of 'mixin.dart';
 
-class _WatchEntry<TObservedObject, TValue>
-    extends LinkedListEntry<_WatchEntry<Object, Object?>> {
+class _WatchEntry<TObservedObject, TValue> {
   TObservedObject observedObject;
   VoidCallback? notificationHandler;
   StreamSubscription? subscription;
@@ -47,8 +46,8 @@ class _WatchEntry<TObservedObject, TValue>
 class _MixinState {
   Element? _element;
 
-  final _watchList = LinkedList<_WatchEntry<Object, Object?>>();
-  _WatchEntry? currentWatch;
+  final _watchList = <_WatchEntry<Object, Object?>>[];
+  int? currentWatchIndex;
 
   // ignore: use_setters_to_change_properties
   void init(Element element) {
@@ -57,15 +56,19 @@ class _MixinState {
 
   void resetCurrentWatch() {
     // print('resetCurrentWatch');
-    currentWatch = _watchList.isNotEmpty ? _watchList.first : null;
+    currentWatchIndex = _watchList.isNotEmpty ? 0 : null;
   }
 
   /// if _getWatch returns null it means this is either the very first or the las watch
   /// in this list.
   _WatchEntry? _getWatch<T>() {
-    if (currentWatch != null) {
-      final result = currentWatch;
-      currentWatch = currentWatch!.next;
+    if (currentWatchIndex != null) {
+      assert(_watchList.length > currentWatchIndex!);
+      final result = _watchList[currentWatchIndex!];
+      currentWatchIndex = currentWatchIndex! + 1;
+      if (currentWatchIndex! == _watchList.length) {
+        currentWatchIndex = null;
+      }
       return result;
     }
     return null;
@@ -83,7 +86,7 @@ class _MixinState {
       }
     }
     _watchList.add(entry);
-    currentWatch = null;
+    currentWatchIndex = null;
   }
 
   T watch<T extends Listenable>({T? target, String? instanceName}) {
@@ -530,7 +533,7 @@ class _MixinState {
     // print('clearRegistration');
     _watchList.forEach((x) => x.dispose());
     _watchList.clear();
-    currentWatch = null;
+    currentWatchIndex = null;
   }
 
   void dispose() {
