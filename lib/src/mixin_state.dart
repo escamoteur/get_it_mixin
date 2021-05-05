@@ -49,9 +49,21 @@ class _MixinState {
   final _watchList = <_WatchEntry<Object, Object?>>[];
   int? currentWatchIndex;
 
+  static CustomValueNotifier<bool?>? onScopeChanged;
+
   // ignore: use_setters_to_change_properties
   void init(Element element) {
     _element = element;
+
+    /// prepare infrastucture to observe scope changes
+    if (onScopeChanged == null) {
+      onScopeChanged ??=
+          CustomValueNotifier(null, mode: CustomNotifierMode.manual);
+      GetIt.I.onScopeChanged = (pushed) {
+        onScopeChanged!.value = pushed;
+        onScopeChanged!.notifyListeners();
+      };
+    }
   }
 
   void resetCurrentWatch() {
@@ -89,7 +101,7 @@ class _MixinState {
     currentWatchIndex = null;
   }
 
-  T watch<T extends Listenable>({T? target, String? instanceName}) {
+  T watch<T extends ValueListenable>({T? target, String? instanceName}) {
     final T listenable = target ?? GetIt.I<T>(instanceName: instanceName);
     var watch = _getWatch<T>() as _WatchEntry<T, T>?;
 
@@ -523,10 +535,16 @@ class _MixinState {
 
   void pushScope({void Function(GetIt getIt)? init, void Function()? dispose}) {
     if (!_scopeWasPushed) {
-      GetIt.I.pushNewScope(dispose: dispose);
-      init?.call(GetIt.I);
+      GetIt.I.pushNewScope(dispose: dispose, init: init);
       _scopeWasPushed = true;
     }
+  }
+
+  bool? rebuildOnScopeChanges() {
+    final result =
+        watch<CustomValueNotifier<bool?>>(target: onScopeChanged).value;
+    onScopeChanged!.value = null;
+    return result;
   }
 
   void clearRegistratons() {

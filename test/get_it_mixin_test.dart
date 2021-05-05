@@ -69,6 +69,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
 
   @override
   Widget build(BuildContext context) {
+    final wasScopePushed = rebuildOnScopeChanges();
     buildCount++;
     final onlyRead = get<Model>().constantValue!;
     final notifierVal = watch<ValueNotifier<String>, String>();
@@ -147,6 +148,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
           Text(futureResult.data!, key: const Key('futureResult')),
           Text(allReadyResult.toString(), key: const Key('allReadyResult')),
           Text(isReadyResult.toString(), key: const Key('isReadyResult')),
+          Text(wasScopePushed.toString(), key: const Key('wasScopePushed')),
         ],
       ),
     );
@@ -203,6 +205,8 @@ void main() {
         tester.widget<Text>(find.byKey(const Key('streamResult'))).data;
     final futureResult =
         tester.widget<Text>(find.byKey(const Key('futureResult'))).data;
+    final scopeResult =
+        tester.widget<Text>(find.byKey(const Key('wasScopePushed'))).data;
 
     expect(onlyRead, 'onlyRead');
     expect(notifierVal, 'notifierVal');
@@ -212,7 +216,41 @@ void main() {
     expect(nestedCountry, 'nestedCountry');
     expect(streamResult, 'streamResult');
     expect(futureResult, 'futureResult');
+    expect(scopeResult, 'null');
     expect(buildCount, 1);
+  });
+  testWidgets('rebuild on scope changes', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget());
+    await tester.pump();
+
+    var scopeResult =
+        tester.widget<Text>(find.byKey(const Key('wasScopePushed'))).data;
+    expect(scopeResult, 'null');
+
+    GetIt.I.pushNewScope();
+    await tester.pump();
+
+    scopeResult =
+        tester.widget<Text>(find.byKey(const Key('wasScopePushed'))).data;
+    expect(scopeResult, 'true');
+
+    /// triger a rebuild without changing any scopes
+    valNotifier.value = '42';
+
+    await tester.pump();
+
+    scopeResult =
+        tester.widget<Text>(find.byKey(const Key('wasScopePushed'))).data;
+    expect(scopeResult, 'null');
+    expect(buildCount, 3);
+
+    await GetIt.I.popScope();
+    await tester.pump();
+
+    scopeResult =
+        tester.widget<Text>(find.byKey(const Key('wasScopePushed'))).data;
+    expect(scopeResult, 'false');
+    expect(buildCount, 4);
   });
 
   testWidgets('watchTwice', (tester) async {

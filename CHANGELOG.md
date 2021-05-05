@@ -1,3 +1,16 @@
+## [3.1.0] - 05.05.2021
+
+* Added new function to rebuild a widget as soon as a GetIt-Scope changed
+```Dart
+  /// Will triger a rebuild of the Widget if any new GetIt-Scope is pushed or popped
+  /// This function will return `true` if the change was a push otherwise `false`
+  /// If no change has happend the return value will be null
+  bool? rebuildOnScopeChanges();
+```
+## [3.0.0] - 03.05.2021
+
+* Major version bump because get_it V7.0.0 is a breaking change
+
 ## [2.0.2] - 25.04.2021
 
 * Switched internal structure from LinkedList to List because of  https://github.com/dart-lang/sdk/issues/45767 which made the package unusable on web

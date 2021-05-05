@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:functional_listener/functional_listener.dart';
 import 'package:get_it/get_it.dart';
 
 part 'elements.dart';
@@ -238,6 +238,11 @@ mixin GetItMixin on StatelessWidget {
   void pushScope(
           {void Function(GetIt getIt)? init, void Function()? dispose}) =>
       _state.value.pushScope(init: init, dispose: dispose);
+
+  /// Will triger a rebuild of the Widget if any new GetIt-Scope is pushed or popped
+  /// This function will return `true` if the change was a push otherwise `false`
+  /// If no change has happend the return value will be null
+  bool? rebuildOnScopeChanges() => _state.value.rebuildOnScopeChanges();
 }
 
 mixin GetItStatefulWidgetMixin on StatefulWidget {
@@ -471,4 +476,9 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin>
   void pushScope(
           {void Function(GetIt getIt)? init, void Function()? dispose}) =>
       widget._state.value.pushScope(init: init, dispose: dispose);
+
+  /// Will triger a rebuild of the Widget if any new GetIt-Scope is pushed or popped
+  /// This function will return `true` if the change was a push otherwise `false`
+  /// If no change has happend the return value will be null
+  void rebuildOnScopeChanges() => widget._state.value.rebuildOnScopeChanges();
 }
