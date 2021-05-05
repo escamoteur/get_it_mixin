@@ -227,7 +227,7 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
         => showNameDialog(context,name));
 
     registerFutureHandler((Model x) => x.initializationReady, (context,__,_) 
-        => Navigator.of(contex).push(....));
+        => Navigator.of(context).push(....));
     return Column(
       children: [
         //...whatever widgets needed 
