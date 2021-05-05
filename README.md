@@ -280,6 +280,18 @@ You can pass an `init` function that will be called immediately after the scope 
   void pushScope({void Function(GetIt getIt) init, void Function() dispose});
 ```
 
+### Trigger a rebuild on GetIt Scope changes
+As it is possible that objects registered in a higher GetIt-Scope can shadow objects of the same registration type in a lower scope it is important to ensure that the UI can update its references to the newly active object (the one last registered).
+The get_it_mixin detects such changes and updates them on the next rebuild but if you want to ensure that this happens immediately you can put a call to 
+
+```dart
+  /// Will triger a rebuild of the Widget if any new GetIt-Scope is pushed or popped
+  /// This function will return `true` if the change was a push otherwise `false`
+  /// If no change has happend the return value will be null
+  bool? rebuildOnScopeChanges();
+```
+
+in the `build()` method of your root widget.
 ## StatefulWidgets
 All the functions above are available for `StatefulWidgets` too. However with this mixin the need for `StatefulWidgets` will drastically decline.
 In case you need one and also want to use the comfort of this you have to use two different mixins.
