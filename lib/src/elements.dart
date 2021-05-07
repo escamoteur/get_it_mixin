@@ -19,7 +19,6 @@ mixin _GetItElement on ComponentElement {
   @override
   void update(Widget newWidget) {
 //    print('update');
-    _state.clearRegistratons();
     super.update(newWidget);
   }
 
@@ -30,7 +29,8 @@ mixin _GetItElement on ComponentElement {
   }
 }
 
-class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement with _GetItElement {
+class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement
+    with _GetItElement {
   _StatelessMixInElement(
     W widget,
   ) : super(widget) {
@@ -48,7 +48,8 @@ class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement with
   }
 }
 
-class _StatefulMixInElement<W extends GetItStatefulWidgetMixin> extends StatefulElement with _GetItElement {
+class _StatefulMixInElement<W extends GetItStatefulWidgetMixin>
+    extends StatefulElement with _GetItElement {
   _StatefulMixInElement(
     W widget,
   ) : super(widget) {

@@ -287,9 +287,10 @@ class _MixinState {
         ///  still the same stream so we can directly return lastvalue
         if (handler == null) {
           assert(watch.lastValue != null && watch.lastValue!.data != null);
-          // ignore: null_check_on_nullable_type_parameter
           return AsyncSnapshot<R>.withData(
-              watch.lastValue!.connectionState, watch.lastValue!.data!);
+              watch.lastValue!.connectionState,
+              // ignore: null_check_on_nullable_type_parameter
+              watch.lastValue!.data!);
         } else {
           return AsyncSnapshot<R>.nothing();
         }
@@ -344,9 +345,10 @@ class _MixinState {
       return AsyncSnapshot<R>.nothing();
     }
     assert(watch.lastValue != null && watch.lastValue!.data != null);
-    // ignore: null_check_on_nullable_type_parameter
     return AsyncSnapshot<R>.withData(
-        watch.lastValue!.connectionState, watch.lastValue!.data!);
+        watch.lastValue!.connectionState,
+        // ignore: null_check_on_nullable_type_parameter
+        watch.lastValue!.data!);
   }
 
   void registerHandler<T extends Object, R>(

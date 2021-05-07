@@ -1,3 +1,6 @@
+## [3.1.1] - 07.05.2021
+
+* Removed possibly unnecessary reset of the watches on update of the widgets. If you experience any strange behaviour with this version, please let me know
 ## [3.1.0] - 05.05.2021
 
 * Added new function to rebuild a widget as soon as a GetIt-Scope changed
