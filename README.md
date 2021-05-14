@@ -1,20 +1,19 @@
 # get_it_mixin
 
-This package offers a set of mixin types that makes the binding of data that is stored within `
-GetIt` really easy.
+This package offers a set of mixin types that makes the binding of data that is stored within `GetIt` really easy.
 
 >When I write of binding, I mean a mechanism that will automatically rebuild a widget that if data it depends on changes 
 
-Several users asked for support of data binding for GetIt like `provider` offers. At the same time I have to admit I got really intrigued by `flutter_hooks` from [Remi Rousselet](https://github.com/rrousselGit/), so I started to think about how to create something similar for `GetIt`. **I'm very thankful for Remi's work. I took more than one inspiration from his code**
+Several users asked for support of data binding for GetIt like `provider` offers. At the same time I have to admit I got really intrigued by `flutter_hooks` from [Remi Rousselet](https://github.com/rrousselGit/), so I started to think about how to create something similar for `GetIt`. **I'm very thankful for Remi's work. I took more than one inspiration from his code.**
 
-As I want to keep `GetIt` free of Flutter dependencies I choose to write a separate package with mixins to achive this goal.
+As I want to keep `GetIt` free of Flutter dependencies I choose to write a separate package with mixins to achieve this goal.
 
-To be clear you can achieve the same using different Flutter Builders but it will make your Flutter code less readable and you will have more to type.
+To be clear you can achieve the same using different Flutter Builders, but it will make your Flutter code less readable, and you will have more to type.
 
 ## Getting started
 >For this readme I expect that you know how to work with [GetIt](https://pub.dev/packages/get_it)
 
-Lets create some model class that we want to access with the mixins:
+Let's create some model class that we want to access with the mixins:
 
 ```Dart
 class Model extends ChangeNotifier {
@@ -26,7 +25,7 @@ class Model extends ChangeNotifier {
   String get country => _country;
 
   String _emailAddress;
-  set country(String val) {
+  set emailAddress(String val) {
     _emailAddress = val;
     notifyListeners();
   }
@@ -55,7 +54,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
     return Column(
       children: [
         Text(email),
-        Text(getX((Model x) => x.country, instanceName: 'secondModell')),
+        Text(getX((Model x) => x.country, instanceName: 'secondModel')),
       ],
     );
   }
@@ -113,16 +112,16 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
 ```
 
 Unfortunately we have to provide a second generic parameter because Dart can't infer the type of the return value.
-`watch` can not only observe `Valuelistenables` inside GetIt, you also can pass any Valuelistenable as `target` parameter. For instance a `ValueListenable` that was passed as parameter to the Widget. 
+`watch` can not only observe `ValueListenables` inside GetIt, you also can pass any ValueListenable as `target` parameter. For instance a `ValueListenable` that was passed as parameter to the Widget. 
 Luckily we will see with the following functions there is a way to help the compiler.
 
 #### Rules!
-**Important: These functions can only be called inside the `build()` function and you can only watch any objects only once. The functions must be called on every `build`, in the same order, and cannot be called conditionally otherwise the mixin gets confused**
-You can't use any of the watch functions (you can use `get` and `getX` though) inside an `Builder` because a Builder gets its own context and looses the connection to the mixin. If you want to use a watch function inside a `Builder`, wrap the content of the Builder in another Widget that uses the mixin too. 
+**Important: These functions can only be called inside the `build()` function, and you can only watch any objects only once. The functions must be called on every `build`, in the same order, and cannot be called conditionally otherwise the mixin gets confused.**
+You can't use any of the watch functions (you can use `get` and `getX` though) inside a `Builder` because a Builder gets its own context and loses the connection to the mixin. If you want to use a watch function inside a `Builder`, wrap the content of the Builder in another Widget that uses the mixin too. 
 But you shouldn't need any Builders if you use the mixin.
 
 #### WatchX
-In a real app it's way more probable that your business object wont be the `ValueListenable` itself but it will have some properties that might be `ValueListenables` like the `name` property of our `Model` class. To react to changes to of such properties you can use `watchX()`:
+In a real app it's way more probable that your business object won't be the `ValueListenable` itself but it will have some properties that might be `ValueListenables` like the `name` property of our `Model` class. To react to changes of such properties you can use `watchX()`:
 
 ```Dart
 class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
@@ -154,8 +153,8 @@ R watchX<T, R>(
 ```
 which means you would have to pass two generic types, not only `T` but also `R`. If you pass `T` inside the `select` function the compiler is able to infer `R`. 
 
-#### watchOnly & watchXonly
-Another popular pattern is that a business object implements `Listenable` like `ChangeNotifier` and it will notify its listeners whenever one of its properties changes. As we want to only rebuild a Widget when a value that it needs is updated `watchOnly()` lets you define which property you want tp observe and it will only trigger the rebuild if it really changes.
+#### watchOnly & watchXOnly
+Another popular pattern is that a business object implements `Listenable` like `ChangeNotifier` and it will notify its listeners whenever one of its properties changes. As we want to only rebuild a Widget when a value that it needs is updated `watchOnly()` lets you define which property you want to observe, and it will only trigger the rebuild if it really changes.
 `watchXonly()` does the same but for nested `Listenables`
 
 ```Dart
@@ -169,7 +168,7 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
     return Column(
       children: [
         Text(country),
-        Text(innerEamil),
+        Text(innerEmail),
       ],
     );
   }
@@ -178,7 +177,7 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
 
 This Widget will rebuild when either `country` of the `Model` object or `emailAddress` of the nested `Model` changes. If you update `emailAddress` of `Model` it won't update although it too calls `notifyListeners`
 
-If you want to get an update whenever Model triggers `notifyListener` you can achieve this by using this selector method:
+If you want to get an update whenever Model triggers `notifyListeners` you can achieve this by using this selector method:
 
 ```Dart
 final model = watchOnly((Model x) => x);
@@ -193,14 +192,14 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
   Widget build(BuildContext context) {
     final currentUser = watchStream((Model x) => x.userNameUpdates, 'NoUser');
     final ready =
-        watchFuture((Model x) => x.initializationReady,false).data;
+        watchFuture((Model x) => x.initializationReady, false).data;
 
     return Column(
       children: [
         if (ready != true || !currentUser.hasData) // in case of an error ready could be null
-         CircularProgressIndicator()
-         else
-        Text(currentUser.data),
+          CircularProgressIndicator()
+        else
+          Text(currentUser.data),
       ],
     );
   }
@@ -211,7 +210,7 @@ These functions can handle if the selector function returns different Streams an
 
 
 ### Event handlers
-Maybe you don't need a value updated but want to show a Snackbar as soon as a `Stream` emits a value or a `ValueListenable` updates a value or a `Future`. If you wanted to do this without this mix_in you would need a `StatefulWidget` where you subscribe to a `Stream` in `iniState` and dispose your subscription in the `dispose` function of the `State`.
+Maybe you don't need a value updated but want to show a SnackBar as soon as a `Stream` emits a value or a `ValueListenable` updates a value or a `Future`. If you wanted to do this without this mix_in you would need a `StatefulWidget` where you subscribe to a `Stream` in `initState` and dispose your subscription in the `dispose` function of the `State`.
 
 With this mixin you can register handlers for `Streams`, `ValueListenables` and Futures, and the mixin will dispose everything for you as soon as the widget gets destroyed.
 
@@ -236,12 +235,12 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
   }
 }
 ```
-For instance you could register a handler for `thrownExceptions` of a `flutter_command` while you use `watch()` to get the values.
+For instance, you could register a handler for `thrownExceptions` of a `flutter_command` while you use `watch()` to get the values.
 
 In the example above you see that the handler function has a third parameter that we ignored. Your handler gets a dispose function passed there that a handler could use to kill a registration from within itself.
 
 ### allReady() & isReady()
-If you already used the synchronization functions from GetIt you know both of this functions (otherwise check them out in the GetIt readme). The mixin variant returns the actual status as `bool` value and trigger a rebuild when this status changes. Additionally you can register handlers that are called when the status is `true`.
+If you already used the synchronization functions from GetIt you know both of these functions (otherwise check them out in the GetIt readme). The mixin variant returns the actual status as `bool` value and trigger a rebuild when this status changes. Additionally, you can register handlers that are called when the status is `true`.
 
 ```Dart
 class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
@@ -254,6 +253,7 @@ class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
     } else {
       return CircularProgressIndicator();
     }
+  }
 }
 ```
 or with the handler:
@@ -262,11 +262,11 @@ or with the handler:
 class TestStateLessWidget1 extends StatelessWidget with GetItMixin {
   @override
   Widget build(BuildContext context) {
-  allReady(
-      onReady: (context) =>
-          Navigator.of(context).pushReplacement(MainPageRoute()));
+    allReady(
+        onReady: (context) =>
+            Navigator.of(context).pushReplacement(MainPageRoute()));
 
-  return CircularProgressIndicator();
+    return CircularProgressIndicator();
   }
 }
 ```
@@ -281,7 +281,7 @@ You can pass an `init` function that will be called immediately after the scope 
 ```
 
 ## StatefulWidgets
-All the functions above are available for `StatefulWidgets` too. However with this mixin the need for `StatefulWidgets` will drastically decline.
+All the functions above are available for `StatefulWidgets` too. However, with this mixin the need for `StatefulWidgets` will drastically decline.
 In case you need one and also want to use the comfort of this you have to use two different mixins.
 
 ```Dart
