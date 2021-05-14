@@ -74,8 +74,8 @@ class _MixinState {
   /// We don't allow multiple watches on the same object but we allow multiple handler
   /// that can be registered to the same observable object
   void _appendWatch<T extends Object, V>(_WatchEntry<T, V> entry,
-      {bool allowMultipleSubcribers = false}) {
-    if (!allowMultipleSubcribers) {
+      {bool allowMultipleSubscribers = false}) {
+    if (!allowMultipleSubscribers) {
       for (final watch in _watchList) {
         if (watch.watchesTheSame(entry)) {
           throw ArgumentError('This Object is already watched by get_it_mixin');
@@ -147,7 +147,7 @@ class _MixinState {
           x.notificationHandler!,
         ),
       );
-      _appendWatch(watch, allowMultipleSubcribers: handler != null);
+      _appendWatch(watch, allowMultipleSubscribers: handler != null);
     }
 
     final internalHandler = () {
@@ -189,8 +189,8 @@ class _MixinState {
           lastValue: onlyTarget,
           dispose: (x) =>
               x.observedObject.removeListener(x.notificationHandler!));
-      _appendWatch(watch, allowMultipleSubcribers: true);
-      // we have to set `allowMultipleSubcribers=true` because we can't differentiate
+      _appendWatch(watch, allowMultipleSubscribers: true);
+      // we have to set `allowMultipleSubscribers=true` because we can't differentiate
       // one selector function from another.
     }
 
@@ -232,8 +232,8 @@ class _MixinState {
           selector: only,
           dispose: (x) =>
               x.observedObject.removeListener(x.notificationHandler!));
-      _appendWatch(watch, allowMultipleSubcribers: true);
-      // we have to set `allowMultipleSubcribers=true` because we can't differentiate
+      _appendWatch(watch, allowMultipleSubscribers: true);
+      // we have to set `allowMultipleSubscribers=true` because we can't differentiate
       // one selector function from another.
     }
 
@@ -289,7 +289,7 @@ class _MixinState {
     } else {
       watch = _WatchEntry<Stream<R>, AsyncSnapshot<R?>>(
           dispose: (x) => x.subscription!.cancel(), observedObject: stream);
-      _appendWatch(watch, allowMultipleSubcribers: handler != null);
+      _appendWatch(watch, allowMultipleSubscribers: handler != null);
     }
 
     // ignore: cancel_subscriptions
@@ -428,7 +428,7 @@ class _MixinState {
       watch = _WatchEntry<Future<R>, AsyncSnapshot<R?>>(
           observedObject: _future,
           dispose: (x) => x.activeCallbackIdentity = null);
-      _appendWatch(watch, allowMultipleSubcribers: allowMultipleSubscribers);
+      _appendWatch(watch, allowMultipleSubscribers: allowMultipleSubscribers);
     }
 
     /// in case of a new watch or an changing Future we do the following:
