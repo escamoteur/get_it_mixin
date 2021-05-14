@@ -44,7 +44,7 @@ mixin GetItMixin on StatelessWidget {
   /// To observe `ValueListenables`
   /// like [get] but it also registers a listener to [T] and
   /// triggers a rebuild every time [T].value changes
-  /// If [target] is not null whatch will observe this Object instead of
+  /// If [target] is not null watch will observe this Object instead of
   /// looking inside GetIt
   R watch<T extends ValueListenable<R>, R>({T? target, String? instanceName}) =>
       _state.value.watch<T>(target: target, instanceName: instanceName).value;
@@ -98,7 +98,7 @@ mixin GetItMixin on StatelessWidget {
       _state.value.watchStream<T, R>(select, initialValue,
           instanceName: instanceName, preserveState: preserveState);
 
-  /// awaits the ` Future` returned by [select] and triggers a rebuild as soon
+  /// awaits the `Future` returned by [select] and triggers a rebuild as soon
   /// as the `Future` completes. After that it returns
   /// an `AsyncSnapshot` with the received data from the `Future`
   /// When you call [watchFuture] a second time on the same `Future` it will
@@ -249,14 +249,14 @@ mixin GetItStatefulWidgetMixin on StatefulWidget {
 
 mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin>
     on State<TState> {
-  /// this is an ugly hack so that you don't get a warning in the statefulwidget
+  /// this is an ugly hack so that you don't get a warning in the StatefulWidget
   /// all the following functions can be called inside the build function but also
   /// the mixin takes care that everything is correctly disposed.
 
-  /// retrieves or creates an instance of a registered type [t] depending on the registration
+  /// retrieves or creates an instance of a registered type [T] depending on the registration
   /// function used for this type or based on a name.
   /// for factories you can pass up to 2 parameters [param1,param2] they have to match the types
-  /// given at registration with [registerfactoryparam()]
+  /// given at registration with [registerFactoryParam()]
   T get<T extends Object>(
           {String? instanceName, dynamic param1, dynamic param2}) =>
       GetIt.I<T>(instanceName: instanceName, param1: param1, param2: param2);
@@ -275,7 +275,7 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin>
   /// To observe `ValueListenables`
   /// like [get] but it also registers a listener to [T] and
   /// triggers a rebuild every time [T].value changes
-  /// If [target] is not null whatch will observe this Object instead of
+  /// If [target] is not null watch will observe this Object instead of
   /// looking inside GetIt
   R watch<T extends ValueListenable<R>, R>({T? target, String? instanceName}) =>
       widget._state.value

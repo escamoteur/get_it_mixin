@@ -60,7 +60,7 @@ class _MixinState {
     currentWatch = _watchList.isNotEmpty ? _watchList.first : null;
   }
 
-  /// if _getWatch returns null it means this is either the very first or the las watch
+  /// if _getWatch returns null it means this is either the very first or the last watch
   /// in this list.
   _WatchEntry? _getWatch<T>() {
     if (currentWatch != null) {
