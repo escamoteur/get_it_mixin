@@ -7,6 +7,7 @@ class _WatchEntry<TObservedObject, TValue> {
   TValue Function(TObservedObject)? selector;
   final void Function(_WatchEntry<TObservedObject, TValue> entry) _dispose;
   TValue? lastValue;
+  bool isHandlerWatch;
 
   Object? activeCallbackIdentity;
   _WatchEntry(
@@ -16,6 +17,7 @@ class _WatchEntry<TObservedObject, TValue> {
           dispose,
       this.lastValue,
       this.selector,
+      this.isHandlerWatch = false,
       required this.observedObject})
       : _dispose = dispose;
   void dispose() {
@@ -29,7 +31,8 @@ class _WatchEntry<TObservedObject, TValue> {
 
   bool get hasSelector => selector != null;
 
-  bool watchesTheSame(_WatchEntry entry) {
+  bool watchesTheSameAndNotHandler(_WatchEntry entry) {
+    if (isHandlerWatch) return false;
     if (entry.observedObject != null) {
       if (entry.observedObject == observedObject) {
         if (entry.hasSelector && hasSelector) {
@@ -90,9 +93,9 @@ class _MixinState {
   /// that can be registered to the same observable object
   void _appendWatch<T extends Object, V>(_WatchEntry<T, V> entry,
       {bool allowMultipleSubcribers = false}) {
-    if (!allowMultipleSubcribers) {
+    if (!entry.isHandlerWatch && !allowMultipleSubcribers) {
       for (final watch in _watchList) {
-        if (watch.watchesTheSame(entry)) {
+        if (watch.watchesTheSameAndNotHandler(entry)) {
           throw ArgumentError('This Object is already watched by get_it_mixin');
         }
       }
@@ -161,8 +164,9 @@ class _MixinState {
         dispose: (x) => x.observedObject.removeListener(
           x.notificationHandler!,
         ),
+        isHandlerWatch: handler != null,
       );
-      _appendWatch(watch, allowMultipleSubcribers: handler != null);
+      _appendWatch(watch);
     }
 
     final internalHandler = () {
@@ -304,8 +308,13 @@ class _MixinState {
       }
     } else {
       watch = _WatchEntry<Stream<R>, AsyncSnapshot<R?>>(
-          dispose: (x) => x.subscription!.cancel(), observedObject: stream);
-      _appendWatch(watch, allowMultipleSubcribers: handler != null);
+        dispose: (x) => x.subscription!.cancel(),
+        observedObject: stream,
+        isHandlerWatch: handler != null,
+      );
+      _appendWatch(
+        watch,
+      );
     }
 
     // ignore: cancel_subscriptions
@@ -393,10 +402,10 @@ class _MixinState {
   /// We use provider functions here so that [registerFutureHandler] ensure
   /// that they are only called once.
   AsyncSnapshot<R?> registerFutureHandler<T extends Object, R>(
-    Future<R> Function(T)? select,
+    Future<R> Function(T)? select, {
     void Function(BuildContext context, AsyncSnapshot<R?> snapshot,
             void Function() cancel)?
-        handler, {
+        handler,
     required bool allowMultipleSubscribers,
     R Function()? initialValueProvider,
     bool preserveState = true,
@@ -444,9 +453,12 @@ class _MixinState {
 
       watch = _WatchEntry<Future<R>, AsyncSnapshot<R?>>(
           observedObject: _future,
+          isHandlerWatch: handler != null,
           dispose: (x) => x.activeCallbackIdentity = null);
       _appendWatch(watch, allowMultipleSubcribers: allowMultipleSubscribers);
     }
+    //if no handler was passed we expect that this is a normal watchFuture
+    handler ??= (context, x, cancel) => (context as Element).markNeedsBuild();
 
     /// in case of a new watch or an changing Future we do the following:
     watch.observedObject = _future!;
@@ -489,7 +501,7 @@ class _MixinState {
       Duration? timeout}) {
     return registerFutureHandler<Object, bool>(
       null,
-      (context, x, dispose) {
+      handler: (context, x, dispose) {
         if (x.hasError) {
           onError?.call(context, x.error);
         } else {
@@ -513,15 +525,16 @@ class _MixinState {
       void Function(BuildContext context, Object? error)? onError,
       Duration? timeout,
       String? instanceName}) {
-    return registerFutureHandler<Object, bool>(null, (context, x, cancel) {
-      if (x.hasError) {
-        onError?.call(context, x.error);
-      } else {
-        onReady?.call(context);
-      }
-      (context as Element).markNeedsBuild();
-      cancel(); // we want exactly one call.
-    },
+    return registerFutureHandler<Object, bool>(null,
+        handler: (context, x, cancel) {
+          if (x.hasError) {
+            onError?.call(context, x.error);
+          } else {
+            onReady?.call(context);
+          }
+          (context as Element).markNeedsBuild();
+          cancel(); // we want exactly one call.
+        },
         allowMultipleSubscribers: false,
         initialValueProvider: () =>
             GetIt.I.isReadySync<T>(instanceName: instanceName),

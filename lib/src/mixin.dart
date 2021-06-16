@@ -117,8 +117,7 @@ mixin GetItMixin on StatelessWidget {
     String? instanceName,
     bool preserveState = true,
   }) =>
-      _state.value.registerFutureHandler<T, R>(
-          select, (context, x, cancel) => (context as Element).markNeedsBuild(),
+      _state.value.registerFutureHandler<T, R>(select,
           initialValueProvider: () => initialValue,
           instanceName: instanceName,
           preserveState: preserveState,
@@ -191,7 +190,8 @@ mixin GetItMixin on StatelessWidget {
     R? initialValue,
     String? instanceName,
   }) {
-    _state.value.registerFutureHandler<T, R?>(select, handler,
+    _state.value.registerFutureHandler<T, R?>(select,
+        handler: handler,
         initialValueProvider: () => initialValue,
         instanceName: instanceName,
         allowMultipleSubscribers: true);
@@ -355,8 +355,7 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin>
     String? instanceName,
     bool preserveState = true,
   }) =>
-      widget._state.value.registerFutureHandler<T, R>(
-          select, (context, x, cancel) => (context as Element).markNeedsBuild(),
+      widget._state.value.registerFutureHandler<T, R>(select,
           initialValueProvider: () => initialValue,
           instanceName: instanceName,
           preserveState: preserveState,
@@ -430,7 +429,8 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin>
     R? initialValue,
     String? instanceName,
   }) =>
-      widget._state.value.registerFutureHandler<T, R?>(select, handler,
+      widget._state.value.registerFutureHandler<T, R?>(select,
+          handler: handler,
           initialValueProvider: () => initialValue,
           instanceName: instanceName,
           allowMultipleSubscribers: true);

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_weather_demo/weather_manager.dart';
-import 'package:functional_listener/functional_listener.dart';
 import 'package:get_it_mixin/get_it_mixin.dart';
 
 import 'listview.dart';
@@ -11,11 +10,11 @@ class HomePage extends StatefulWidget with GetItStatefulWidgetMixin {
 }
 
 class _HomePageState extends State<HomePage> with GetItStateMixin {
-  ListenableSubscription? errorSubscription;
-
   @override
-  void didChangeDependencies() {
-    errorSubscription ??= get<WeatherManager>().updateWeatherCommand.thrownExceptions.listen((error, _) {
+  Widget build(BuildContext context) {
+    registerHandler(
+        (WeatherManager x) => x.updateWeatherCommand.thrownExceptions,
+        (context, error, cancel) {
       showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -23,20 +22,13 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
                 content: Text(error.toString()),
               ));
     });
-    super.didChangeDependencies();
-  }
 
-  @override
-  void dispose() {
-    errorSubscription?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isRunning = watchX((WeatherManager x) => x.updateWeatherCommand.isExecuting);
-    final updateButtonEnbaled = watchX((WeatherManager x) => x.updateWeatherCommand.canExecute);
-    final switchValue = watchX((WeatherManager x) => x.setExecutionStateCommand);
+    final isRunning =
+        watchX((WeatherManager x) => x.updateWeatherCommand.isExecuting);
+    final updateButtonEnbaled =
+        watchX((WeatherManager x) => x.updateWeatherCommand.canExecute);
+    final switchValue =
+        watchX((WeatherManager x) => x.setExecutionStateCommand);
 
     return Scaffold(
       appBar: AppBar(title: Text("WeatherDemo")),
@@ -83,8 +75,11 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
                   child: ElevatedButton(
                     child: Text("Update"),
                     style: ElevatedButton.styleFrom(
-                        primary: Color.fromARGB(255, 33, 150, 243), onPrimary: Color.fromARGB(255, 255, 255, 255)),
-                    onPressed: updateButtonEnbaled ? get<WeatherManager>().updateWeatherCommand.call : null,
+                        primary: Color.fromARGB(255, 33, 150, 243),
+                        onPrimary: Color.fromARGB(255, 255, 255, 255)),
+                    onPressed: updateButtonEnbaled
+                        ? get<WeatherManager>().updateWeatherCommand.call
+                        : null,
                   ),
                 ),
                 Switch(
