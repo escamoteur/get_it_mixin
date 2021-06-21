@@ -170,9 +170,11 @@ class _MixinState {
     }
 
     final internalHandler = () {
-      /// in case this is used to register a handler
-      handler?.call(_element!, listenable.value, watch!.dispose);
-      _element!.markNeedsBuild();
+      if (handler != null) {
+        handler(_element!, listenable.value, watch!.dispose);
+      } else {
+        _element!.markNeedsBuild();
+      }
     };
     watch.notificationHandler = internalHandler;
     watch.observedObject = listenable;
@@ -323,9 +325,10 @@ class _MixinState {
         if (handler != null) {
           handler(_element!, AsyncSnapshot.withData(ConnectionState.active, x),
               watch!.dispose);
+        } else {
+          watch!.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
+          _element!.markNeedsBuild();
         }
-        watch!.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
-        _element!.markNeedsBuild();
       },
       onError: (Object error) {
         if (handler != null) {
