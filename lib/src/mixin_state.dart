@@ -13,7 +13,8 @@ class _WatchEntry<TObservedObject, TValue> {
   _WatchEntry(
       {this.notificationHandler,
       this.subscription,
-      required void Function(_WatchEntry<TObservedObject, TValue> entry) dispose,
+      required void Function(_WatchEntry<TObservedObject, TValue> entry)
+          dispose,
       this.lastValue,
       this.selector,
       this.isHandlerWatch = false,
@@ -59,7 +60,8 @@ class _MixinState {
 
     /// prepare infrastucture to observe scope changes
     if (onScopeChanged == null) {
-      onScopeChanged ??= CustomValueNotifier(null, mode: CustomNotifierMode.manual);
+      onScopeChanged ??=
+          CustomValueNotifier(null, mode: CustomNotifierMode.manual);
       GetIt.I.onScopeChanged = (pushed) {
         onScopeChanged!.value = pushed;
         onScopeChanged!.notifyListeners();
@@ -89,7 +91,8 @@ class _MixinState {
 
   /// We don't allow multiple watches on the same object but we allow multiple handler
   /// that can be registered to the same observable object
-  void _appendWatch<T extends Object, V>(_WatchEntry<T, V> entry, {bool allowMultipleSubcribers = false}) {
+  void _appendWatch<T extends Object, V>(_WatchEntry<T, V> entry,
+      {bool allowMultipleSubcribers = false}) {
     if (!entry.isHandlerWatch && !allowMultipleSubcribers) {
       for (final watch in _watchList) {
         if (watch.watchesTheSameAndNotHandler(entry)) {
@@ -137,7 +140,8 @@ class _MixinState {
   /// [handler] and [executeImmediately] are used by [registerHandler]
   R watchX<T extends Object, R>(
     ValueListenable<R> Function(T) select, {
-    void Function(BuildContext contex, R newValue, void Function() dispose)? handler,
+    void Function(BuildContext contex, R newValue, void Function() dispose)?
+        handler,
     bool executeImmediately = false,
     String? instanceName,
   }) {
@@ -204,7 +208,8 @@ class _MixinState {
           observedObject: parentObject,
           selector: only,
           lastValue: onlyTarget,
-          dispose: (x) => x.observedObject.removeListener(x.notificationHandler!));
+          dispose: (x) =>
+              x.observedObject.removeListener(x.notificationHandler!));
       _appendWatch(watch, allowMultipleSubcribers: true);
       // we have to set `allowMultipleSubcribers=true` because we can't differentiate
       // one selector function from another.
@@ -246,7 +251,8 @@ class _MixinState {
           observedObject: listenable,
           lastValue: only(listenable),
           selector: only,
-          dispose: (x) => x.observedObject.removeListener(x.notificationHandler!));
+          dispose: (x) =>
+              x.observedObject.removeListener(x.notificationHandler!));
       _appendWatch(watch, allowMultipleSubcribers: true);
       // we have to set `allowMultipleSubcribers=true` because we can't differentiate
       // one selector function from another.
@@ -272,7 +278,9 @@ class _MixinState {
     R? initialValue, {
     String? instanceName,
     bool preserveState = true,
-    void Function(BuildContext context, AsyncSnapshot<R> snapshot, void Function() cancel)? handler,
+    void Function(BuildContext context, AsyncSnapshot<R> snapshot,
+            void Function() cancel)?
+        handler,
   }) {
     final T parentObject = GetIt.I<T>(instanceName: instanceName);
     final stream = select(parentObject);
@@ -296,7 +304,9 @@ class _MixinState {
         /// select returned a different value than the last time
         /// so we have to unregister out handler and subscribe anew
         watch.dispose();
-        initialValue = preserveState ? watch.lastValue!.data ?? initialValue : initialValue;
+        initialValue = preserveState
+            ? watch.lastValue!.data ?? initialValue
+            : initialValue;
       }
     } else {
       watch = _WatchEntry<Stream<R>, AsyncSnapshot<R?>>(
@@ -313,7 +323,8 @@ class _MixinState {
     final subscription = stream.listen(
       (x) {
         if (handler != null) {
-          handler(_element!, AsyncSnapshot.withData(ConnectionState.active, x), watch!.dispose);
+          handler(_element!, AsyncSnapshot.withData(ConnectionState.active, x),
+              watch!.dispose);
         } else {
           watch!.lastValue = AsyncSnapshot.withData(ConnectionState.active, x);
           _element!.markNeedsBuild();
@@ -321,19 +332,27 @@ class _MixinState {
       },
       onError: (Object error) {
         if (handler != null) {
-          handler(_element!, AsyncSnapshot.withError(ConnectionState.active, error), watch!.dispose);
+          handler(
+              _element!,
+              AsyncSnapshot.withError(ConnectionState.active, error),
+              watch!.dispose);
         }
-        watch!.lastValue = AsyncSnapshot.withError(ConnectionState.active, error);
+        watch!.lastValue =
+            AsyncSnapshot.withError(ConnectionState.active, error);
         _element!.markNeedsBuild();
       },
     );
     watch.subscription = subscription;
     watch.observedObject = stream;
-    watch.lastValue = AsyncSnapshot<R?>.withData(ConnectionState.waiting, initialValue);
+    watch.lastValue =
+        AsyncSnapshot<R?>.withData(ConnectionState.waiting, initialValue);
 
     if (handler != null) {
       if (initialValue != null) {
-        handler(_element!, AsyncSnapshot.withData(ConnectionState.waiting, initialValue), watch.dispose);
+        handler(
+            _element!,
+            AsyncSnapshot.withData(ConnectionState.waiting, initialValue),
+            watch.dispose);
       }
       return AsyncSnapshot<R>.nothing();
     }
@@ -346,11 +365,15 @@ class _MixinState {
 
   void registerHandler<T extends Object, R>(
     ValueListenable<R> Function(T) select,
-    void Function(BuildContext contex, R newValue, void Function() dispose) handler, {
+    void Function(BuildContext contex, R newValue, void Function() dispose)
+        handler, {
     bool executeImmediately = false,
     String? instanceName,
   }) {
-    watchX<T, R>(select, handler: handler, executeImmediately: executeImmediately, instanceName: instanceName);
+    watchX<T, R>(select,
+        handler: handler,
+        executeImmediately: executeImmediately,
+        instanceName: instanceName);
   }
 
   void registerStreamHandler<T extends Object, R>(
@@ -364,7 +387,8 @@ class _MixinState {
     R? initialValue,
     String? instanceName,
   }) {
-    watchStream<T, R>(select, initialValue, instanceName: instanceName, handler: handler);
+    watchStream<T, R>(select, initialValue,
+        instanceName: instanceName, handler: handler);
   }
 
   /// this function is used to implement several others
@@ -382,7 +406,9 @@ class _MixinState {
   /// that they are only called once.
   AsyncSnapshot<R?> registerFutureHandler<T extends Object, R>(
     Future<R> Function(T)? select, {
-    void Function(BuildContext context, AsyncSnapshot<R?> snapshot, void Function() cancel)? handler,
+    void Function(BuildContext context, AsyncSnapshot<R?> snapshot,
+            void Function() cancel)?
+        handler,
     required bool allowMultipleSubscribers,
     R Function()? initialValueProvider,
     bool preserveState = true,
@@ -429,7 +455,9 @@ class _MixinState {
       _future ??= futureProvider!();
 
       watch = _WatchEntry<Future<R>, AsyncSnapshot<R?>>(
-          observedObject: _future, isHandlerWatch: handler != null, dispose: (x) => x.activeCallbackIdentity = null);
+          observedObject: _future,
+          isHandlerWatch: handler != null,
+          dispose: (x) => x.activeCallbackIdentity = null);
       _appendWatch(watch, allowMultipleSubcribers: allowMultipleSubscribers);
     }
     //if no handler was passed we expect that this is a normal watchFuture
@@ -454,14 +482,15 @@ class _MixinState {
       onError: (Object error) {
         if (watch!.activeCallbackIdentity == callbackIdentity) {
           // print('Future error');
-          watch.lastValue = AsyncSnapshot.withError(ConnectionState.done, error);
+          watch.lastValue =
+              AsyncSnapshot.withError(ConnectionState.done, error);
           handler!(_element!, watch.lastValue!, watch.dispose);
         }
       },
     );
 
-    watch.lastValue =
-        AsyncSnapshot<R?>.withData(ConnectionState.waiting, _initialValue ?? initialValueProvider?.call());
+    watch.lastValue = AsyncSnapshot<R?>.withData(
+        ConnectionState.waiting, _initialValue ?? initialValueProvider?.call());
     if (executeImmediately) {
       handler(_element!, watch.lastValue!, watch.dispose);
     }
@@ -489,7 +518,8 @@ class _MixinState {
 
       /// as `GetIt.allReady` returns a Future<void> we convert it
       /// to a bool because if this Future completes the meaning is true.
-      futureProvider: () => GetIt.I.allReady(timeout: timeout).then((_) => true),
+      futureProvider: () =>
+          GetIt.I.allReady(timeout: timeout).then((_) => true),
     ).data!;
   }
 
@@ -509,11 +539,14 @@ class _MixinState {
           cancel(); // we want exactly one call.
         },
         allowMultipleSubscribers: false,
-        initialValueProvider: () => GetIt.I.isReadySync<T>(instanceName: instanceName),
+        initialValueProvider: () =>
+            GetIt.I.isReadySync<T>(instanceName: instanceName),
 
         /// as `GetIt.allReady` returns a Future<void> we convert it
         /// to a bool because if this Future completes the meaning is true.
-        futureProvider: () => GetIt.I.isReady<T>(instanceName: instanceName, timeout: timeout).then((_) => true)).data!;
+        futureProvider: () => GetIt.I
+            .isReady<T>(instanceName: instanceName, timeout: timeout)
+            .then((_) => true)).data!;
   }
 
   bool _scopeWasPushed = false;
@@ -526,7 +559,8 @@ class _MixinState {
   }
 
   bool? rebuildOnScopeChanges() {
-    final result = watch<CustomValueNotifier<bool?>>(target: onScopeChanged).value;
+    final result =
+        watch<CustomValueNotifier<bool?>>(target: onScopeChanged).value;
     onScopeChanged!.value = null;
     return result;
   }
