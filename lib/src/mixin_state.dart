@@ -492,7 +492,7 @@ class _MixinState {
     watch.lastValue = AsyncSnapshot<R?>.withData(
         ConnectionState.waiting, _initialValue ?? initialValueProvider?.call());
     if (executeImmediately) {
-      handler!(_element!, watch.lastValue!, watch.dispose);
+      handler(_element!, watch.lastValue!, watch.dispose);
     }
 
     return watch.lastValue!;
