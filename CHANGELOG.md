@@ -1,3 +1,9 @@
+## [3.1.4] - 10.02.2022
+
+* fix for https://github.com/escamoteur/get_it_mixin/issues/16
+* fix for https://github.com/escamoteur/get_it_mixin/issues/17
+* fix for https://github.com/escamoteur/get_it_mixin/issues/20
+
 ## [3.1.3] - 21.06.2021
 
 * fix for https://github.com/escamoteur/get_it_mixin/issues/13
