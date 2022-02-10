@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_command/flutter_command.dart';
-import 'package:functional_listener/functional_listener.dart';
 import 'package:http/http.dart' as http;
 
 import 'json/weather_in_cities.dart';
