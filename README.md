@@ -7,7 +7,7 @@ class UserNameText extends StatelessWidget with GetItMixin {
   @override
   Widget build(BuildContext context) {
     final userName = watchX((UserModel m) => m.name);
-    return Button(child: Text(userName);
+    return Text(userName);
   }
 }
 ```
