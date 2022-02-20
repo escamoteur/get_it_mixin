@@ -35,7 +35,8 @@ class _MyWidgetState extends State<MyWidget> with GetItStateMixin {
   }
 }
 ```
-The `GetItMixin` api is the same regardless of whether you use `Stateless` or `Stateful` widgets!
+
+__NOTE__: The `GetItMixin` API is generally the same regardless of whether you use `Stateless` or `Stateful` widgets.
 
 ## Watching Data
 
