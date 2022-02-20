@@ -101,7 +101,7 @@ class MyWidget extends StatelessWidget with GetItMixin {
 
 ### Side Effects / Event Handlers
 
-Maybe you don't need to rebuild but want to show a Snackbar as soon as a Stream emits a value or a ValueListenable updates.
+Instead of rebuilding, you might instead want to show a toast notification or dialog when a Stream emits a value or a ValueListenable changes.
 
 To run an action when data changes you can use the `register` methods:
 | API  | Description  |
