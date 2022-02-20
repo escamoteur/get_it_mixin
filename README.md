@@ -134,7 +134,7 @@ There are some important rules to follow in order to avoid bugs with the `watch`
 * must be called on every build, in the same order (no conditional watching)
 * do not use them inside of a builder as it will break the mixins ability to rebuild
 
-__isReady<T>() and allReady()__
+# __isReady<T>() and allReady()__
 A common use case is to toggle a loading state when side effects are in-progress. To check whether any registered actions have completed you can use `allReady()` and `isReady<T>()`. These methods return the current state of any registered async operations and a rebuild is triggered when they change.
 ```dart
 class MyWidget extends StatelessWidget with GetItMixin {
