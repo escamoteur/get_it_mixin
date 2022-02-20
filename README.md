@@ -134,8 +134,6 @@ There are some important rules to follow in order to avoid bugs with the `watch`
 * must be called on every build, in the same order (no conditional watching)
 * do not use them inside of a builder as it will break the mixins ability to rebuild
 
-[TODO: Ask Thomas if  register calls are safe outside of build ]
-
 __isReady<T>() and allReady()__
 A common use case is to toggle a loading state when side effects are in-progress. To check whether any registered actions have completed you can use `allReady()` and `isReady<T>()`. These methods return the current state of any registered async operations and a rebuild is triggered when they change.
 ```dart
@@ -149,11 +147,14 @@ class MyWidget extends StatelessWidget with GetItMixin {
 }
 ```
 
-Check out the GetIt docs for more information on the synchronization functions [TODO: ADD LINK]
+Check out the GetIt docs for more information on the `isReady` and `allReady` functionality:
+https://pub.dev/packages/get_it
 
 # Pushing a new GetIt Scope
 
-[SB] I don't really know why this exists...
-
-
+With `pushScope()` you can push a scope when a Widget/State is mounted, and automatically pop when the Widget/State is destroyed. You can pass an optional init or dispose function.
+```dart
+  void pushScope({void Function(GetIt getIt) init, void Function() dispose});
+```
+This can be very useful for injecting mock services when views are opened so you can easily test them.
 
