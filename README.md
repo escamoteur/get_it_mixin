@@ -1,6 +1,8 @@
 # get_it_mixin
 
-A set of mixins that allow you to easily bind widgets to data registered with `GetIt`, these widgets will rebuild automatically whenever the bound data changes.
+A set of mixins that allow widgets to `watch` data registered with `GetIt`. Widgets that watch data will rebuild automatically whenever that data changes. 
+
+Supported data types that can be watched are `ChangeNotifier`, `ValueNotifier`, `Stream` and `Future`.
 
 `ChangeNotifier` based example:
 ```dart
@@ -18,7 +20,7 @@ class UserModel extends ChangeNotifier {
 // Register it 
 getIt.registerSingleton<UserModel>(UserModel());
 
-// Bind to it
+// Watch it
 class UserNameText extends StatelessWidget with GetItMixin {
   @override
   Widget build(BuildContext context) {
