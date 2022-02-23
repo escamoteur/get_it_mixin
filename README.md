@@ -93,7 +93,7 @@ Just call `watch_` to listen to the data type you need, and `GetItMixin` will ta
 
 The primary benefit to the `watch` methods is that they eliminate the need for `ValueListenableBuilders`, `StreamBuilder` etc. Each binding consumes only one line and there is no nesting.
 
-Here we bind to three `ValueListenable` which would normally be three builders, many lines of code and several levels of indentation. With `GetItMixin`, it's three lines:
+Here we watch three `ValueListenable` which would normally be three builders, 12+ lines of code and several levels of indentation. With `GetItMixin`, it's three lines:
 ```dart
 class MyWidget extends StatelessWidget with GetItMixin {
   @override
@@ -131,7 +131,7 @@ To run an action when data changes you can use the `register` methods:
 | `.registerStreamHandler`  | Add an event handler for a `Stream`  |
 | `.registerFutureHandler`  | Add an event handler for a `Future`  |
 
-The first param in the `register` methods is a `select` delegate that can be used to bind to a specific field. The second param is the handler delegate itself:
+The first param in the `register` methods is a `select` delegate that can be used to watch to a specific field. The second param is the action which will be triggered:
 ```dart
 class MyWidget extends StatelessWidget with GetItMixin {
   @override
@@ -146,7 +146,7 @@ class MyWidget extends StatelessWidget with GetItMixin {
 
 In the example above you see that the handler function receives the value that is returned from the select delegate (`(Model x) => x.name`), as well as a `cancel` function that the handler can call to cancel registration at any time.
 
-As with `watch` calls, all registered handlers are cleaned up when the widget is destroyed!
+As with `watch` calls, all `registerHandler` calls are cleaned up when the Widget is destroyed.
 
 # Rules
 
