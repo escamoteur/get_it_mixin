@@ -110,8 +110,10 @@ class MyWidget extends StatelessWidget with GetItMixin {
   Widget build(BuildContext context) {
     final currentUser = watchStream((UserModel x) => x.userNameUpdates, 'NoUser');
     final ready = watchFuture((AppModel x) => x.initializationReady, false).data;
-    bool appLoadedAndUserLoggedIn = ready == true && currentUser.hasData;
-    ...
+    bool appIsLoading = ready == false || currentUser.hasData == false;
+    
+    if(appIsLoading) return CircularProgressIndicator();
+    return Text(currentUser.data);    
   }
 }
 ```
