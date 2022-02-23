@@ -125,7 +125,7 @@ To run an action when data changes you can use the `register` methods:
 |---|---|
 | `.registerHandler`  | Add a event handler for a `ValueListenable`  |
 | `.registerStreamHandler`  | Add a event handler for a `Stream`  |
-| `.registerStreamHandler`  | Add a event handler for a `Future`  |
+| `.registerFutureHandler`  | Add a event handler for a `Future`  |
 
 The first param in the `register` methods is a `select` delegate that can be used to bind to a specific field. The second param is the handler delegate itself:
 ```dart
