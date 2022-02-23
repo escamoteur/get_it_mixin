@@ -4,7 +4,7 @@ A set of mixins that allow you to easily bind widgets to data registered with `G
 
 Example:
 ```dart
-// Create a model
+// Create a ChangeNotifier based model
 class UserModel extends ChangeNotifier {
   get name = _name;
   String _name = '';
