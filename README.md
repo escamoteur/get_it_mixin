@@ -1,6 +1,6 @@
 # get_it_mixin
 
-A set of mixins that allow you to easily bind widgets to data registered with `GetIt`.
+A set of mixins that allow you to easily bind widgets to data registered with `GetIt`, these widgets will rebuild automatically whenever the bound data changes.
 
 Example:
 ```dart
@@ -147,8 +147,9 @@ As with `watch` calls, all registered handlers are cleaned up when the widget is
 # Rules
 
 There are some important rules to follow in order to avoid bugs with the `watch` methods:
-* `watch` methods should only be called within `build()`
-* must be called on every build, in the same order (no conditional watching)
+* `watch` methods must be called within `build()`
+  * It is good practice to define them at the top of your build method
+* must be called on every build, in the same order (no conditional watching). This is similar to `flutter_hooks`.
 * do not use them inside of a builder as it will break the mixins ability to rebuild
 
 # __isReady<T>() and allReady()__
