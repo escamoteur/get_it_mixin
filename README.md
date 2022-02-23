@@ -2,6 +2,7 @@
 
 A set of mixins that allow you to easily bind widgets to data registered with `GetIt`.
 
+Example:
 ```dart
 // Create a model
 class UserModel extends ChangeNotifier {
