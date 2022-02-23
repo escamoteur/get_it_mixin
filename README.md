@@ -131,7 +131,7 @@ To run an action when data changes you can use the `register` methods:
 | `.registerStreamHandler`  | Add an event handler for a `Stream`  |
 | `.registerFutureHandler`  | Add an event handler for a `Future`  |
 
-The first param in the `register` methods is a `select` delegate that can be used to watch to a specific field. The second param is the action which will be triggered:
+The first param in the `register` methods is a `select` delegate that can be used to watch a specific field. The second param is the action which will be triggered when that field changes:
 ```dart
 class MyWidget extends StatelessWidget with GetItMixin {
   @override
