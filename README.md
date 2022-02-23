@@ -123,9 +123,9 @@ Instead of rebuilding, you might instead want to show a toast notification or di
 To run an action when data changes you can use the `register` methods:
 | API  | Description  |
 |---|---|
-| `.registerHandler`  | Add a event handler for a `ValueListenable`  |
-| `.registerStreamHandler`  | Add a event handler for a `Stream`  |
-| `.registerFutureHandler`  | Add a event handler for a `Future`  |
+| `.registerHandler`  | Add an event handler for a `ValueListenable`  |
+| `.registerStreamHandler`  | Add an event handler for a `Stream`  |
+| `.registerFutureHandler`  | Add an event handler for a `Future`  |
 
 The first param in the `register` methods is a `select` delegate that can be used to bind to a specific field. The second param is the handler delegate itself:
 ```dart
