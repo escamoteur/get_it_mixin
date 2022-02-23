@@ -3,10 +3,25 @@
 A set of mixins that allow you to easily bind widgets to data registered with `GetIt`.
 
 ```dart
+// Create a model
+class UserModel extends ChangeNotifier {
+  get name = _name;
+  String _name = '';
+  set name(String value){
+    _name = value;
+    notifyListeners();
+  }
+  ...
+}
+
+// Register it 
+getIt.registerSingleton<UserModel>(UserModel());
+
+// Bind to it
 class UserNameText extends StatelessWidget with GetItMixin {
   @override
   Widget build(BuildContext context) {
-    final userName = watchX((UserModel m) => m.name);
+    final userName = watchOnly((UserModel m) => m.name);
     return Text(userName);
   }
 }
