@@ -2,7 +2,7 @@
 
 A set of mixins that allow you to easily bind widgets to data registered with `GetIt`, these widgets will rebuild automatically whenever the bound data changes.
 
-Example:
+`ChangeNotifier` based example:
 ```dart
 // Create a ChangeNotifier based model
 class UserModel extends ChangeNotifier {
