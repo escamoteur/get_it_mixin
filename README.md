@@ -178,5 +178,7 @@ With `pushScope()` you can push a scope when a Widget/State is mounted, and auto
 ```dart
   void pushScope({void Function(GetIt getIt) init, void Function() dispose});
 ```
-This can be very useful for injecting mock services when views are opened so you can easily test them.
+This can be very useful for injecting mock services when views are opened so you can easily test them. Of course you can also push and pop scope directly from your tests as well!
+
+For more background on how GetItMixin came to be, please see the EXTENDED_README.
 
