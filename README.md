@@ -180,5 +180,8 @@ With `pushScope()` you can push a scope when a Widget/State is mounted, and auto
 ```
 This can be very useful for injecting mock services when views are opened so you can easily test them. Of course you can also push and pop scope directly from your tests as well!
 
-For more background on how GetItMixin came to be, please see the EXTENDED_README.
+# Find out more!
+For more background on the history of GetItMixin you can check out the [README_EXTENDED](README_EXTENDED.md).
+
+For a more complete explanation of the API watch the presentation: [GetIt in action By Thomas Burkhart](https://youtu.be/YJ52kSfSMyM).
 
