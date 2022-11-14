@@ -125,6 +125,7 @@ class MyWidget extends StatelessWidget with GetItMixin {
 Instead of rebuilding, you might instead want to show a toast notification or dialog when a Stream emits a value or a ValueListenable changes.
 
 To run an action when data changes you can use the `register` methods:
+
 | API  | Description  |
 |---|---|
 | `.registerHandler`  | Add an event handler for a `ValueListenable`  |
