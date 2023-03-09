@@ -75,8 +75,8 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
                   child: ElevatedButton(
                     child: Text("Update"),
                     style: ElevatedButton.styleFrom(
-                        primary: Color.fromARGB(255, 33, 150, 243),
-                        onPrimary: Color.fromARGB(255, 255, 255, 255)),
+                        foregroundColor: Color.fromARGB(255, 255, 255, 255),
+                        backgroundColor: Color.fromARGB(255, 33, 150, 243)),
                     onPressed: updateButtonEnbaled
                         ? get<WeatherManager>().updateWeatherCommand.call
                         : null,

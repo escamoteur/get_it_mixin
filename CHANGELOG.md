@@ -1,3 +1,24 @@
+## [4.0.0] - 09.03.2023
+
+Although the change in the API is a minor one and most of you won't see a difference it is a change in the function signature of `watchOnly` that justifies a major version bump.
+
+* `watchOnly` got more powerful and flexible. You know can trigger a rebuild on every change notification of the `Listenable` for instance a simple ChangeNotifier. Also you can pass in a direct `target` if the listenable that you want to observe is available outside GetIt.
+
+```dart
+  /// like watch but for simple `Listenable` objects.
+  /// It only triggers a rebuild when the value that
+  /// [only] returns changes. With that you can react to changes of single members
+  /// of [T]
+  /// If [only] is null it will trigger a rebuild every time the `Listenable` changes
+  /// in this case R has to be equal to T
+  /// If [target] is not null whatch will observe this Object as Listenable instead of
+  /// looking inside GetIt
+  R watchOnly<T extends Listenable, R>(
+    R Function(T)? only, {
+    T? target,
+    String? instanceName,
+  }) =>
+```
 ## [3.1.4] - 10.02.2022
 
 * fix for https://github.com/escamoteur/get_it_mixin/issues/16

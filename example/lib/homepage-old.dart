@@ -15,7 +15,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void didChangeDependencies() {
-    errorSubscription ??= GetIt.I<WeatherManager>().updateWeatherCommand.thrownExceptions.listen((error, _) {
+    errorSubscription ??= GetIt.I<WeatherManager>()
+        .updateWeatherCommand
+        .thrownExceptions
+        .listen((error, _) {
       showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -59,7 +62,9 @@ class _HomePageState extends State<HomePage> {
               children: [
                 WeatherListView(),
                 ValueListenableBuilder<bool>(
-                  valueListenable: GetIt.I<WeatherManager>().updateWeatherCommand.isExecuting,
+                  valueListenable: GetIt.I<WeatherManager>()
+                      .updateWeatherCommand
+                      .isExecuting,
                   builder: (BuildContext context, bool isRunning, _) {
                     // if true we show a busy Spinner otherwise the ListView
                     if (isRunning == true) {
@@ -85,14 +90,19 @@ class _HomePageState extends State<HomePage> {
               children: <Widget>[
                 Expanded(
                   child: ValueListenableBuilder<bool>(
-                    valueListenable: GetIt.I<WeatherManager>().updateWeatherCommand.canExecute,
+                    valueListenable: GetIt.I<WeatherManager>()
+                        .updateWeatherCommand
+                        .canExecute,
                     builder: (BuildContext context, bool canExecute, _) {
                       // Depending on the value of canEcecute we set or clear the Handler
-                      final handler = canExecute ? GetIt.I<WeatherManager>().updateWeatherCommand : null;
+                      final handler = canExecute
+                          ? GetIt.I<WeatherManager>().updateWeatherCommand
+                          : null;
                       return ElevatedButton(
                         child: Text("Update"),
                         style: ElevatedButton.styleFrom(
-                            primary: Color.fromARGB(255, 33, 150, 243), onPrimary: Color.fromARGB(255, 255, 255, 255)),
+                            foregroundColor: Color.fromARGB(255, 255, 255, 255),
+                            backgroundColor: Color.fromARGB(255, 33, 150, 243)),
 
                         /// because of a current limitation of Dart
                         /// we have to use `?.execute` if the command is
@@ -103,11 +113,13 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 ValueListenableBuilder<bool>(
-                    valueListenable: GetIt.I<WeatherManager>().setExecutionStateCommand,
+                    valueListenable:
+                        GetIt.I<WeatherManager>().setExecutionStateCommand,
                     builder: (context, value, _) {
                       return Switch(
                         value: value,
-                        onChanged: GetIt.I<WeatherManager>().setExecutionStateCommand,
+                        onChanged:
+                            GetIt.I<WeatherManager>().setExecutionStateCommand,
                       );
                     })
               ],

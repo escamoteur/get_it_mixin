@@ -62,11 +62,17 @@ mixin GetItMixin on StatelessWidget {
   /// It only triggers a rebuild when the value that
   /// [only] returns changes. With that you can react to changes of single members
   /// of [T]
+  /// If [only] is null it will trigger a rebuild every time the `Listenable` changes
+  /// in this case R has to be equal to T
+  /// If [target] is not null whatch will observe this Object as Listenable instead of
+  /// looking inside GetIt
   R watchOnly<T extends Listenable, R>(
-    R Function(T) only, {
+    R Function(T)? only, {
+    T? target,
     String? instanceName,
   }) =>
-      _state.value.watchOnly<T, R>(only, instanceName: instanceName);
+      _state.value.watchOnly<T, R>(
+          only: only, target: target, instanceName: instanceName);
 
   /// a combination of [watchX] and [watchOnly] for simple
   /// `Listenable` members [Q] of your object [T]
@@ -300,11 +306,17 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin>
   /// It only triggers a rebuild when the value that
   /// [only] returns changes. With that you can react to changes of single members
   /// of [T]
+  /// If [only] is null it will trigger a rebuild every time the `Listenable` changes
+  /// in this case R has to be equal to T
+  /// If [target] is not null whatch will observe this Object as Listenable instead of
+  /// looking inside GetIt
   R watchOnly<T extends Listenable, R>(
-    R Function(T) only, {
+    R Function(T)? only, {
+    T? target,
     String? instanceName,
   }) =>
-      widget._state.value.watchOnly<T, R>(only, instanceName: instanceName);
+      widget._state.value.watchOnly<T, R>(
+          only: only, target: target, instanceName: instanceName);
 
   /// a combination of [watchX] and [watchOnly] for simple
   /// `Listenable` members [Q] of your object [T]

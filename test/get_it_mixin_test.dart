@@ -46,6 +46,7 @@ class Model extends ChangeNotifier {
 
 class TestStateLessWidget extends StatelessWidget with GetItMixin {
   final bool watchTwice;
+  final bool watchOnlyNoOnly;
   final bool watchOnlyTwice;
   final bool watchXtwice;
   final bool watchXonlytwice;
@@ -58,6 +59,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
       {Key? key,
       this.localTarget,
       this.watchTwice = false,
+      this.watchOnlyNoOnly = false,
       this.watchOnlyTwice = false,
       this.watchXtwice = false,
       this.watchXonlytwice = false,
@@ -73,8 +75,16 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
     buildCount++;
     final onlyRead = get<Model>().constantValue!;
     final notifierVal = watch<ValueNotifier<String>, String>();
-    final country = watchOnly((Model x) => x.country)!;
-    final country2 = watchOnly((Model x) => x.country2)!;
+
+    String country;
+    String country2;
+    if (watchOnlyNoOnly) {
+      final model = watchOnly<Model, Model>(null);
+      country = model.country!;
+      country2 = model.country2!;
+    }
+    country = watchOnly((Model x) => x.country)!;
+    country2 = watchOnly((Model x) => x.country2)!;
     final name = watchX((Model x) => x.name!);
     final nestedCountry =
         watchXOnly((Model x) => x.nestedModel!, (Model? n) => n?.country);
@@ -477,6 +487,35 @@ void main() {
     expect(streamResult, 'streamResult');
     expect(futureResult, 'futureResult');
     expect(buildCount, 1);
+  });
+  testWidgets('test watchOnly with only == null', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      watchOnlyNoOnly: true,
+    ));
+    theModel.notifyListeners();
+    await tester.pump();
+
+    final onlyRead =
+        tester.widget<Text>(find.byKey(const Key('onlyRead'))).data;
+    final notifierVal =
+        tester.widget<Text>(find.byKey(const Key('notifierVal'))).data;
+    final country = tester.widget<Text>(find.byKey(const Key('country'))).data;
+    final name = tester.widget<Text>(find.byKey(const Key('name'))).data;
+    final nestedCountry =
+        tester.widget<Text>(find.byKey(const Key('nestedCountry'))).data;
+    final streamResult =
+        tester.widget<Text>(find.byKey(const Key('streamResult'))).data;
+    final futureResult =
+        tester.widget<Text>(find.byKey(const Key('futureResult'))).data;
+
+    expect(onlyRead, 'onlyRead');
+    expect(notifierVal, 'notifierVal');
+    expect(country, 'country');
+    expect(name, 'name');
+    expect(nestedCountry, 'nestedCountry');
+    expect(streamResult, 'streamResult');
+    expect(futureResult, 'futureResult');
+    expect(buildCount, 2);
   });
   testWidgets('watchStream', (tester) async {
     await tester.pumpWidget(TestStateLessWidget());

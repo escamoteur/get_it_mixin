@@ -186,26 +186,31 @@ class _MixinState {
     return listenable.value;
   }
 
-  R watchOnly<T extends Listenable, R>(
-    R Function(T) only, {
+  R watchOnly<T extends Listenable, R>({
+    R Function(T)? only,
     String? instanceName,
+    T? target,
   }) {
-    final T parentObject = GetIt.I<T>(instanceName: instanceName);
+    // final T listenable = target ?? GetIt.I<T>(instanceName: instanceName);
+    final T listenable = target ?? GetIt.I<T>(instanceName: instanceName);
 
     var watch = _getWatch() as _WatchEntry<T, R>?;
 
     if (watch != null) {
-      if (parentObject == watch.observedObject) {
-        return only(parentObject);
+      if (listenable == watch.observedObject) {
+        if (only != null) {
+          return only(listenable);
+        }
+        return listenable as R;
       } else {
         /// the targetobject has changed probably by passing another instance
         /// so we have to unregister our handler and subscribe anew
         watch.dispose();
       }
     } else {
-      final onlyTarget = only(parentObject);
+      final onlyTarget = only != null ? only(listenable) : listenable as R;
       watch = _WatchEntry<T, R>(
-          observedObject: parentObject,
+          observedObject: listenable,
           selector: only,
           lastValue: onlyTarget,
           dispose: (x) =>
@@ -216,7 +221,12 @@ class _MixinState {
     }
 
     final handler = () {
-      final newValue = only(parentObject);
+      if (only == null) {
+        _element!.markNeedsBuild();
+        watch!.lastValue = listenable as R;
+        return;
+      }
+      final newValue = only(listenable);
       if (watch!.lastValue != newValue) {
         _element!.markNeedsBuild();
         watch.lastValue = newValue;
@@ -224,8 +234,8 @@ class _MixinState {
     };
     watch.notificationHandler = handler;
 
-    parentObject.addListener(handler);
-    return only(parentObject);
+    listenable.addListener(handler);
+    return only != null ? only(listenable) : listenable as R;
   }
 
   R watchXOnly<T extends Object, Q extends Listenable, R>(
