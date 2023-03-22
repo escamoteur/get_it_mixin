@@ -511,7 +511,8 @@ class _MixinState {
   bool allReady(
       {void Function(BuildContext context)? onReady,
       void Function(BuildContext context, Object? error)? onError,
-      Duration? timeout}) {
+      Duration? timeout,
+      bool shouldRebuild = true}) {
     return registerFutureHandler<Object, bool>(
       null,
       handler: (context, x, dispose) {
@@ -519,7 +520,10 @@ class _MixinState {
           onError?.call(context, x.error);
         } else {
           onReady?.call(context);
-          (context as Element).markNeedsBuild();
+          if (shouldRebuild) {
+            (context as Element).markNeedsBuild();
+          }
+          
         }
         dispose();
       },

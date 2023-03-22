@@ -1,3 +1,17 @@
+## [4.1.0] - 22.03.2023
+
+* added `allReadyHandler`. Although `allReady` already has an optional handler, it will always trigger a rebuild which leads to a double execution of the registered handler. This might not always be what you want.
+
+```dart
+  /// registers a handler that is called when the all-ready state is reached
+  /// it does not trigger a rebuild like [allReady] does
+  /// you can force a timeout Exceptions if [allReady] completed
+  /// within [timeout] which will call [onError]
+  void allReadyHandler(void Function(BuildContext context)? onReady,
+          {void Function(BuildContext context, Object? error)? onError,
+          Duration? timeout})
+```
+
 ## [4.0.0] - 09.03.2023
 
 Although the change in the API is a minor one and most of you won't see a difference it is a change in the function signature of `watchOnly` that justifies a major version bump.

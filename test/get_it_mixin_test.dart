@@ -54,6 +54,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
   final bool watchFutureTwice;
   final bool testIsReady;
   final bool testAllReady;
+  final bool testAllReadyHandler;
   final ValueListenable<int>? localTarget;
   TestStateLessWidget(
       {Key? key,
@@ -66,7 +67,8 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
       this.watchStreamTwice = false,
       this.watchFutureTwice = false,
       this.testIsReady = false,
-      this.testAllReady = false})
+      this.testAllReady = false,
+      this.testAllReadyHandler = false})
       : super(key: key);
 
   @override
@@ -116,6 +118,12 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
     if (testAllReady) {
       allReadyResult =
           allReady(onReady: (context) => allReadyHandlerResult = 'Ready');
+    }
+    if (testAllReadyHandler) {
+      allReadyHandler((context) {
+        allReadyHandlerCount++;
+        allReadyHandlerResult2 = 'Ready';
+      });
     }
     bool? isReadyResult;
 
@@ -172,16 +180,20 @@ String? streamHandlerResult;
 String? futureHandlerResult;
 String? listenableHandlerResult;
 String? allReadyHandlerResult;
+String? allReadyHandlerResult2;
 String? isReadyHandlerResult;
+int allReadyHandlerCount = 0;
 
 void main() {
   setUp(() async {
     buildCount = 0;
+    allReadyHandlerCount = 0;
     streamHandlerResult = null;
     listenableHandlerResult = null;
     streamHandlerResult = null;
     futureHandlerResult = null;
     allReadyHandlerResult = null;
+    allReadyHandlerResult2 = null;
     isReadyHandlerResult = null;
     await GetIt.I.reset();
     valNotifier = ValueNotifier<String>('notifierVal');
@@ -711,6 +723,22 @@ void main() {
     expect(allReadyResult, 'true');
     expect(allReadyHandlerResult, 'Ready');
     expect(buildCount, 2);
+  });
+  testWidgets('allReadyHandler test', (tester) async {
+    GetIt.I.registerSingletonAsync(
+        () => Future.delayed(const Duration(milliseconds: 10), () => Model()),
+        instanceName: 'asyncObject');
+    await tester.pumpWidget(TestStateLessWidget(
+      testAllReadyHandler: true,
+    ));
+    await tester.pump();
+
+    expect(allReadyHandlerResult2, null);
+
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(allReadyHandlerResult2, 'Ready');
+    expect(allReadyHandlerCount, 1);
+    expect(buildCount, 1);
   });
   testWidgets('isReady async object that is finished', (tester) async {
     GetIt.I.registerSingletonAsync<Model>(
