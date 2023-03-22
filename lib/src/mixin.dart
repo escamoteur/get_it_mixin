@@ -472,6 +472,19 @@ mixin GetItStateMixin<TState extends GetItStatefulWidgetMixin>
       widget._state.value
           .allReady(onReady: onReady, onError: onError, timeout: timeout);
 
+  /// registers a handler that is called when the all-ready state is reached
+  /// it does not trigger a rebuild like [allReady] does
+  /// you can force a timeout Exceptions if [allReady] completed
+  /// within [timeout] which will call [onError]
+  void allReadyHandler(void Function(BuildContext context)? onReady,
+          {void Function(BuildContext context, Object? error)? onError,
+          Duration? timeout}) =>
+      widget._state.value.allReady(
+          onReady: onReady,
+          onError: onError,
+          timeout: timeout,
+          shouldRebuild: false);
+
   /// returns `true` if the registered async or dependent object defined by [T] and
   /// [instanceName] is ready
   /// and call [onReady] [onError] handlers when the ready state is reached

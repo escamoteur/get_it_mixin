@@ -1,3 +1,6 @@
+## [4.1.1] - 22.03.2023
+
+* I forgot to add the new `allReadyHandler` to the `GetItStateMixin` too
 ## [4.1.0] - 22.03.2023
 
 * added `allReadyHandler`. Although `allReady` already has an optional handler, it will always trigger a rebuild which leads to a double execution of the registered handler. This might not always be what you want.
