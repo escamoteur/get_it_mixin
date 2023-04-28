@@ -7,6 +7,7 @@ import 'package:get_it/get_it.dart';
 
 part 'elements.dart';
 part 'mixin_state.dart';
+part 'widgets.dart';
 
 class _MutableWrapper<T> {
   late T value;

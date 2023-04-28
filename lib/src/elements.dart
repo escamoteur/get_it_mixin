@@ -31,9 +31,7 @@ mixin _GetItElement on ComponentElement {
 
 class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement
     with _GetItElement {
-  _StatelessMixInElement(
-    W widget,
-  ) : super(widget) {
+  _StatelessMixInElement(W widget) : super(widget) {
     _state = _MixinState();
     widget._state.value = _state;
   }
