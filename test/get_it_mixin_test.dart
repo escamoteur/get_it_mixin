@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:get_it_mixin/get_it_mixin.dart';
+import 'package:get_it_mixin/watch_it.dart';
 
 class Model extends ChangeNotifier {
   String? constantValue;
@@ -44,7 +44,7 @@ class Model extends ChangeNotifier {
   Future<String> get future => completer.future;
 }
 
-class TestStateLessWidget extends StatelessWidget with GetItMixin {
+class TestStateLessWidget extends StatelessWidget with WatchItMixin {
   final bool watchTwice;
   final bool watchOnlyNoOnly;
   final bool watchOnlyTwice;
@@ -75,7 +75,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
   Widget build(BuildContext context) {
     final wasScopePushed = rebuildOnScopeChanges();
     buildCount++;
-    final onlyRead = get<Model>().constantValue!;
+    final onlyRead = di<Model>().constantValue!;
     final notifierVal = watch<ValueNotifier<String>, String>();
 
     String country;
