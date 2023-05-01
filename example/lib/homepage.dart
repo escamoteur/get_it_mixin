@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_weather_demo/weather_manager.dart';
-import 'package:get_it_mixin/get_it_mixin.dart';
+import 'package:get_it_mixin/watch_it.dart';
 
 import 'listview.dart';
 
-class HomePage extends StatefulWidget with GetItStatefulWidgetMixin {
+class HomePage extends StatefulWidget with WatchItStatefulWidgetMixin {
+  const HomePage();
+
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with GetItStateMixin {
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     registerHandler(
@@ -46,7 +48,7 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
                 fontSize: 20.0,
                 color: Color.fromARGB(255, 0, 0, 0),
               ),
-              onChanged: get<WeatherManager>().textChangedCommand,
+              onChanged: di<WeatherManager>().textChangedCommand,
             ),
           ),
           Expanded(
@@ -78,13 +80,13 @@ class _HomePageState extends State<HomePage> with GetItStateMixin {
                         foregroundColor: Color.fromARGB(255, 255, 255, 255),
                         backgroundColor: Color.fromARGB(255, 33, 150, 243)),
                     onPressed: updateButtonEnbaled
-                        ? get<WeatherManager>().updateWeatherCommand.call
+                        ? di<WeatherManager>().updateWeatherCommand.call
                         : null,
                   ),
                 ),
                 Switch(
                   value: switchValue,
-                  onChanged: get<WeatherManager>().setExecutionStateCommand,
+                  onChanged: di<WeatherManager>().setExecutionStateCommand,
                 ),
               ],
             ),

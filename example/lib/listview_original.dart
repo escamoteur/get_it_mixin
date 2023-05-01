@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_weather_demo/weather_manager.dart';
-import 'package:get_it_mixin/get_it_mixin.dart';
+import 'package:get_it_mixin/watch_it.dart';
 
-class WeatherListView extends StatelessWidget with GetItMixin {
+class WeatherListView extends StatelessWidget with WatchItMixin {
   WeatherListView();
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<List<WeatherEntry>>(
-      valueListenable: getX((WeatherManager x) => x.updateWeatherCommand),
+      valueListenable: di<WeatherManager>().updateWeatherCommand,
       builder: (BuildContext context, List<WeatherEntry> data, _) {
         return ListView.builder(
           itemCount: data.length,
@@ -17,10 +17,12 @@ class WeatherListView extends StatelessWidget with GetItMixin {
             leading: data[index].iconURL != null
                 ? Image.network(
                     data[index].iconURL!,
-                    frameBuilder: (BuildContext context, Widget child, int? frame, bool wasSynchronouslyLoaded) {
+                    frameBuilder: (BuildContext context, Widget child,
+                        int? frame, bool wasSynchronouslyLoaded) {
                       return child;
                     },
-                    loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                    loadingBuilder: (BuildContext context, Widget child,
+                        ImageChunkEvent? loadingProgress) {
                       if (loadingProgress == null) return child;
                       return CircularProgressIndicator();
                     },

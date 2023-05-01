@@ -1,8 +1,9 @@
-part of 'mixin.dart';
+part of 'watch_it.dart';
+
+_WatchItState? _activeWatchItState;
 
 mixin _GetItElement on ComponentElement {
-  late _MixinState _state;
-
+  final _WatchItState _state = _WatchItState();
   @override
   void mount(Element? parent, dynamic newSlot) {
     _state.init(this);
@@ -13,13 +14,14 @@ mixin _GetItElement on ComponentElement {
   Widget build() {
     //print('build');
     _state.resetCurrentWatch();
-    return super.build();
-  }
-
-  @override
-  void update(Widget newWidget) {
-//    print('update');
-    super.update(newWidget);
+    _activeWatchItState = _state;
+    late Widget result;
+    try {
+      result = super.build();
+    } finally {
+      _activeWatchItState = null;
+    }
+    return result;
   }
 
   @override
@@ -29,38 +31,12 @@ mixin _GetItElement on ComponentElement {
   }
 }
 
-class _StatelessMixInElement<W extends GetItMixin> extends StatelessElement
-    with _GetItElement {
-  _StatelessMixInElement(W widget) : super(widget) {
-    _state = _MixinState();
-    widget._state.value = _state;
-  }
-  @override
-  W get widget => super.widget as W;
-
-  @override
-  void update(W newWidget) {
-    //print('update stateless element');
-    newWidget._state.value = _state;
-    super.update(newWidget);
-  }
+class _StatelessWatchItElement<W extends StatelessWidget>
+    extends StatelessElement with _GetItElement {
+  _StatelessWatchItElement(W widget) : super(widget);
 }
 
-class _StatefulMixInElement<W extends GetItStatefulWidgetMixin>
-    extends StatefulElement with _GetItElement {
-  _StatefulMixInElement(
-    W widget,
-  ) : super(widget) {
-    _state = _MixinState();
-    widget._state.value = _state;
-  }
-  @override
-  W get widget => super.widget as W;
-
-  @override
-  void update(W newWidget) {
-    //print('update statefull element');
-    newWidget._state.value = _state;
-    super.update(newWidget);
-  }
+class _StatefulWatchItElement<W extends StatefulWidget> extends StatefulElement
+    with _GetItElement {
+  _StatefulWatchItElement(W widget) : super(widget);
 }

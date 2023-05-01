@@ -1,28 +1,16 @@
-part of 'mixin.dart';
+part of 'watch_it.dart';
 
-abstract class GetItWidget extends StatelessWidget {
-  const GetItWidget({Key? key}) : super(key: key);
-
-  @override
-  _StatelessGetItElement createElement() => _StatelessGetItElement(this);
-}
-
-class _StatelessGetItElement extends StatelessElement with _GetItElement {
-  _StatelessGetItElement(GetItWidget widget) : super(widget) {
-    _state = _MixinState();
-  }
-}
-
-class MyWidget extends StatefulWidget {
-  const MyWidget({Key? key}) : super(key: key);
+abstract class WatchingWidget extends StatelessWidget {
+  const WatchingWidget({Key? key}) : super(key: key);
 
   @override
-  State<MyWidget> createState() => _MyWidgetState();
+  StatelessElement createElement() =>
+      _StatelessWatchItElement<WatchingWidget>(this);
 }
 
-class _MyWidgetState extends State<MyWidget> {
+abstract class WatchingStatefulWidget extends StatefulWidget {
+  const WatchingStatefulWidget({Key? key}) : super(key: key);
+
   @override
-  Widget build(BuildContext context) {
-    return const Placeholder();
-  }
+  StatefulElement createElement() => _StatefulWatchItElement(this);
 }

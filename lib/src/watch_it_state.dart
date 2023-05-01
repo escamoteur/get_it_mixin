@@ -1,4 +1,4 @@
-part of 'mixin.dart';
+part of 'watch_it.dart';
 
 class _WatchEntry<TObservedObject, TValue> {
   TObservedObject observedObject;
@@ -46,7 +46,7 @@ class _WatchEntry<TObservedObject, TValue> {
   }
 }
 
-class _MixinState {
+class _WatchItState {
   Element? _element;
 
   final _watchList = <_WatchEntry<Object, Object?>>[];
@@ -523,7 +523,6 @@ class _MixinState {
           if (shouldRebuild) {
             (context as Element).markNeedsBuild();
           }
-          
         }
         dispose();
       },
