@@ -56,6 +56,7 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
   final bool testAllReady;
   final bool testAllReadyHandler;
   final ValueListenable<int>? localTarget;
+  final bool pushScopeTest;
   TestStateLessWidget(
       {Key? key,
       this.localTarget,
@@ -68,11 +69,17 @@ class TestStateLessWidget extends StatelessWidget with GetItMixin {
       this.watchFutureTwice = false,
       this.testIsReady = false,
       this.testAllReady = false,
+      this.pushScopeTest = false,
       this.testAllReadyHandler = false})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    if (pushScopeTest) {
+      pushScope(
+        init: (getIt) => getIt.registerSingleton<String>('TestString'),
+      );
+    }
     final wasScopePushed = rebuildOnScopeChanges();
     buildCount++;
     final onlyRead = get<Model>().constantValue!;
@@ -630,6 +637,21 @@ void main() {
     expect(theModel.name!.hasListeners, false);
     expect(theModel.streamController.hasListener, false);
     expect(valNotifier.hasListeners, false);
+
+    expect(buildCount, 1);
+  });
+  testWidgets('test pushScope', (tester) async {
+    await tester.pumpWidget(TestStateLessWidget(
+      pushScopeTest: true,
+    ));
+
+    print(GetIt.I.currentScopeName);
+    expect(GetIt.I.isRegistered<String>(), true);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    print(GetIt.I.currentScopeName);
+
+    expect(GetIt.I.isRegistered<String>(), false);
 
     expect(buildCount, 1);
   });

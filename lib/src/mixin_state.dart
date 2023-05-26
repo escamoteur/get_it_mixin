@@ -523,7 +523,6 @@ class _MixinState {
           if (shouldRebuild) {
             (context as Element).markNeedsBuild();
           }
-          
         }
         dispose();
       },
@@ -564,10 +563,12 @@ class _MixinState {
   }
 
   bool _scopeWasPushed = false;
+  String? _scopeName;
 
   void pushScope({void Function(GetIt getIt)? init, void Function()? dispose}) {
     if (!_scopeWasPushed) {
-      GetIt.I.pushNewScope(dispose: dispose, init: init);
+      _scopeName = 'AutoScope: ${DateTime.now().microsecondsSinceEpoch}';
+      GetIt.I.pushNewScope(dispose: dispose, init: init, scopeName: _scopeName);
       _scopeWasPushed = true;
     }
   }
@@ -590,7 +591,7 @@ class _MixinState {
     // print('dispose');
     clearRegistratons();
     if (_scopeWasPushed) {
-      GetIt.I.popScope();
+      GetIt.I.dropScope(_scopeName!);
     }
     _element = null; // making sure the Garbage collector can do its job
   }

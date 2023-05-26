@@ -1,3 +1,5 @@
+## [4.2.0] - 22.03.2023
+* `pushScope` now gives the new scope a unique name, that is used to drop it when the Widget is destroyed. This is a precausion to avoid race conditions if another widget pushes a new scope while this one isn't destroyed yet. See https://github.com/fluttercommunity/get_it/issues/316
 ## [4.1.1] - 22.03.2023
 
 * I forgot to add the new `allReadyHandler` to the `GetItStateMixin` too
