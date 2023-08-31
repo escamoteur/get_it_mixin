@@ -1,3 +1,12 @@
+**Hi my friends,**
+
+**I recently published my new package `watch_it` https://github.com/escamoteur/watch_it, an overhauled version of the `get_it_mixin` but with a more intuitive and streamlined API. Porting an existing project using `get_it_mixin` is really easy and quick.**
+
+**To better connect with my package users I know opened a Discord Server to support my packages https://discord.gg/ZHYHYCM38h**
+
+
+**This package here won't be further maintained. You can continue using the latest version but I won't add new features or fix bugs.**
+
 # get_it_mixin
 
 A set of mixins that allow widgets to `watch` data registered with `GetIt`. Widgets that watch data will rebuild automatically whenever that data changes. 
