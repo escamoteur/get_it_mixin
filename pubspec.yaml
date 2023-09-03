@@ -1,6 +1,6 @@
 name: get_it_mixin
 description: mixin on Stateless- and StatefulWidgts that makes binding the Widget to Objects stored in GetIt easier. 
-version: 4.2.1
+version: 4.2.2
 author: Thomas Burkhart
 homepage: https://github.com/escamoteur/get_it_mixin
 
